@@ -1,0 +1,29 @@
+BirdID,LabID,Sex,Morph,Day14PL,InocOutcome,Mass
+1325,TK 083,male,white,15,infected,17500
+2571 35345,TK 085,male,white,27,infected,17800
+2571 35388,TK 101,female,white,12,infected,16800
+2661 67457,TK 097,female,tan,53,infected,19100
+2661 67459,TK 098,female,tan,10,infected,16600
+2661 67463,TK 079,male,white,39,infected,18200
+2661 67469,TK 052,female,tan,54,infected,18200
+2661 67558,TK 046,male,white,6,infected,18900
+2741 68780,TK 061,male,tan,37,infected,18200
+2571 35397,TK 103,male,tan,0,resisted,20600
+2571 35398,TK086,male,tan,0,resisted,22900
+2661 67402,TK 076,male,white,0,resisted,19200
+2661 67411,TK 092,female,white,0,resisted,22500
+2661 67412,TK 084,female,white,1,resisted,19300
+2661 67439,TK 071,female,white,0,resisted,22900
+2661 67458,TK 091,female,white,2,resisted,22000
+2661 67460,TK062,female,tan,1,resisted,22200
+2661 67508,TK 057,male,tan,0,resisted,22900
+2661 67513,TK 049,female,tan,0,resisted,19900
+2661 67520,TK 050,male,white,0,resisted,23100
+2661 67524,TK048,female,tan,0,resisted,21200
+2661 67581,TK 041,male,white,0,resisted,21800
+2661 67588,TK 042,female,tan,0,resisted,21900
+2661 67709,TK038,male,white,0,resisted,22900
+2661 67720,TK034,male,tan,0,resisted,23700
+2661 67721,TK033,female,tan,3,resisted,18700
+2661 67725,TK031,female,tan,1,resisted,22400
+2661 67734,TK030,male,white,2,resisted,26200

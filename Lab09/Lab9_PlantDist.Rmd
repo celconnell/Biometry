@@ -1,0 +1,306 @@
+---
+title: 'Lab 9: Plant Distributions'
+author: "Celeste Connell"
+date: "11/01./2018"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# General information
+This lab is due November 7th by 11:59 pm. This lab is worth 10 points (each question is 1 point unless otherwise noted). You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+We will extend what you learned last week about regression by incorporating multiple predictor variables, as well as interactions. Therefore, we will be using *general linear models*.
+
+# Background
+For lab this week we will use the dataset `PlantAbund.csv`. These data are adapted from Paruelo and Lauenroth's 1996 paper, "Relative Abundance of Plant Functional Types in Grasslands and Shrublands of North America". This study aimed to understand how temperature and precipitation affected the abundances of two different classes of plants: C4 grasses and C3 grasses. 
+
+Each row of the dataframe (n = 73) is a site in North America where grass abundance and climate variables were measured. 
+
+The dataset consists of the following columns:
+
+  1. *C3*: relative abundance of C3 grasses
+  2. *C4*: relative abundance of C4 grasses
+  3. *MAP*: Mean annual precipitation
+  4. *MAT*: Mean annual temperature
+  5. *JJAMAP*: Summer precipitation; the proportion of precipitation falling during summer (June, July, August)
+  6. *DJFMAP*: Winter precipitation; the proportion of precipitation falling during winter (December, January, February) 
+  7. *LONG*: Longitude of the site
+  8. *LAT*: Latitude of the site.
+
+As usual, we will start by reading in the data and looking at the structure.
+```{r}
+grasses <- read.csv("PlantAbund.csv")
+head(grasses)
+str(grasses)
+```
+
+# Fitting the model: What determines the relative abundance of C3 grasses?
+First, we will look at how annual temperature (MAT) and summer precipitation (JJAMAP) affect the abundance of C3 grasses. Since we have more than one predictor variable in our model, we will use *multiple regression*. 
+
+Let's start by plotting the data. 
+
+\textcolor{red}{\textbf{Question 1} Create two scatterplots, the first showing the relationship between C3 abundance (as a response variable) and mean annual temperature, and the second showing the relationship between C3 abundance and summer precipitation.}
+
+```{r}
+plot(C3~MAT, data = grasses, 
+     pch = 16, col = "blue", main = "Mean annual temp vs. C3 grass abundance")
+
+plot(C3~JJAMAP, data = grasses, 
+     pch = 16, col = "forestgreen", main = "Summer precipitation vs. C3 grass abundance")
+```
+
+
+Next, you will use a linear regression to examine how mean annual temperature and summer precipitation *interact* to influence C3 grass abundance.
+
+\textcolor{red}{\textbf{Question 2} Run a linear regression to test the interaction between annual temperature and summer precipitation on C3 grass abundance. Report the coefficient estimate and P-value for each parameter in the model. Describe what each parameter is.}
+
+For instance: "MAT is the effect of annual temperature on C3 abundance when JJAMAP is zero. Estimate of the slope is 0.013; P = 0.46".
+
+```{r}
+lm.c3 <- lm(C3 ~ MAT*JJAMAP, grasses)
+summary(lm.c3)
+```
+
+
+\textcolor{red}{\textbf{Question 3} Interpret the estimate and significance of the JJAMAP coefficient, in mathematical and "plain English" terms. What does this tell you?}
+
+*JJAMAP (summer precipitation proportion) is the effect of summer precipitation on C3 abundance when MAT (mean annual temperature) is zero. Estimate of the slope is 1.34241; P = 0.0360.*
+
+
+\textcolor{red}{\textbf{Question 4} Interpret the estimate and significance for the interaction (MAT:JJAMAP). What does this tell you?}
+
+*Mean annual temperature depends on summer precipitation. For every 1 unit increase in summer precipitation proportion, the slope of mean annual temperature decreases by 0.14225 (increases by -0.14225); P = 0.0189.*
+
+
+# Using the model to generate predictions
+One thing you might want to do is to predict C3 abundances at different levels of precipitation and temperature. We can use the `predict` function to do this. The predict function uses the fitted linear model, along with a set of predictor variables, to predict the outcome variable. 
+
+## Example predictions
+The following is an *example*, time using a different linear model on C4 abundances. First, I'll fit the model:
+```{r}
+lm.c4 <- lm(C4~LAT*LONG, grasses)
+```
+
+Now, say I want to predict C4 grass abundance in Boulder, at LAT = 40.015 and LONG = 105.27. I will start by making a new dataframe that has my predictor variables. In the new data frame, I need to make sure I have all of the predictor variables in my linear model, and that they have the same names as in my original dataframe.
+```{r}
+my.data <- data.frame(
+  "LAT" = 40.015,
+  "LONG" = 105.27
+)
+```
+
+The `predict` function will use the linear model and the new dataframe to make a prediction:
+```{r}
+predict(lm.c4, newdata = my.data)
+```
+
+Our model predicts the mean relative abundance of C4 grasses will be 0.322. Let's confirm this by calculating the predicted C4 abundance using the linear regression equation.
+
+Let's take a look at the summary to find the regression equation:
+```{r}
+summary(lm.c4)
+```
+
+Therefore, the equation of the model is:
+C4 = 4.69 -0.0297(LAT) - 0.032(LONG) + 0.0000495(LAT*LONG)
+
+Let's plug in our predictor values to confirm that the `predict` function worked.
+```{r}
+# let's save our coefficients so we can easily use them.
+lm.c4.coef <- coef(lm.c4)
+lm.c4.coef
+# use the linear equation of the model along with the predictor variables to predict c4
+predictedC4 <- lm.c4.coef[1] + lm.c4.coef[2]*40.015 + 
+  lm.c4.coef[3]*105.27 + lm.c4.coef[4]*40.015*105.27
+predictedC4
+```
+
+To sum this up, we have made a prediction using the equation from our linear model. Using the linear model equation and the `predict` function gives us the same result.
+
+
+## Predicting C3 abundance with your linear model
+Your turn! Answer the following question using the model you ran to predict C3 abundance. 
+
+\textcolor{red}{\textbf{Question 5} What does your model predict the relative C3 abundance to be at sites where JJMAP is 0.5 and MAT is 11?}
+
+```{r}
+lm.c3 <- lm(C3 ~ MAT*JJAMAP, grasses)
+summary(lm.c3)
+my.data.c3 <- data.frame(
+  "JJAMAP" = 0.5,
+  "MAT" = 11
+)
+predict(lm.c3, newdata = my.data.c3)
+
+```
+ 
+*Mean relative C3 abundance is 0.191.*
+ 
+ 
+# Plotting interactions
+
+## Example: C4 abundances
+As you saw in previous examples from lecture and lab, the `abline` function can add a simple best fit line to a scatterplot. However, when we have multiple regression with interactions, we may want to show multiple best fit lines. The following example shows the relationship between summer precipitation and C3 abundance, at different levels of annual temperature. 
+
+This plotting will use a package called `jtools`. To install the package, delete the #'s and run the following code. Then comment the lines out with a # or delete the code chunk. You only have to run these lines of code ONCE on your computer.
+```{r}
+#install.packages("jtools")
+#install.packages("RColorBrewer")
+```
+
+This example works with the `lm.c4` regression using the interaction between lat and long to predict C4 abundance. 
+
+We will plot the relationship between longitude and C4, with a best fit line for high latitude and low latitude places.
+
+The command `interact_plot` in the `jtools` library is used.
+The arguments are:
+
+  * `pred=` gives the predictor variable we want on the X axis
+  * `modx=` gives the other predictor variable in the model that we want to vary
+  * `plot.points=TRUE` adds the raw data from the original dataset
+  * `interval = TRUE` adds a confidence interval around the best fit lines
+  * `int.width = 0.95` makes the confidence interval equal to a 95% CI
+  * `color.class = "PuRd"` makes the colors vary from purple to red. See ?RColorBrewer for more types of sequential palettes.
+  * `x.label` X axis label
+  * `y.label` Y axis label
+  * `legend.main` Legend title
+
+For more customization, see `?interact_plot`
+
+```{r, warning = FALSE}
+# load the libraries
+library(jtools)
+library(RColorBrewer)
+
+# make the plot
+interact_plot(lm.c4, pred = "LONG", modx = "LAT", plot.points = TRUE, 
+              interval = TRUE, int.width = .95, 
+              color.class = "PuRd",x.label = "Longitude", 
+              y.label = "Relative C4 Abundance", legend.main = "Latitude")
+```
+
+To look at the plot click the little rectangle with an arrow that appears above the upper-right corner of the plot. This will open the plot in a new window.
+
+The plot tells us a few important things:
+
+1) The pink dotted line shows the relationship between Longitude and C4 relative abundance at mean Latitudes. We can see that C4 abundance decreases with Longitude.
+
+2) The red dotted line shows the relationship between Longitude and C4 relative abundance at Latitudes that are +1 SD away from the mean ("higher latitude" sites). The relationship between longitude and C4 doesn't change at higher latitude (the line is parallel), but overall there are fewer C4 plants at higher latitude. This corresponds to the model output of `lm.C4`.
+
+3) The purple dotted line shows the relationship between Longitude and C4 at low latitudes (-1 SD in latitude). Again, the slope hasn't changed but there are overall more C4 plants at low latitudes (near the equator.)
+
+4) Our uncertainty estimates show that, at low longitudes there is some overlap between the different latitudes. The 95% confidence interval at low latitude overlaps with 95% confidence interval for mean latitudes, at low latitudes. This tell us that the fixed effect of latitude is probably not significant. Again, this corresponds with our model. The slope for latitude is not significant, which makes sense, since this is the effect of latitude on C4 *when longitude is ZERO*
+
+## Plotting interactions with your linear model
+Your turn! Create an interaction plot showing the relationship between JJAMAP (on the X axis) and relative C3 abundance. Compare best fit lines between low mean annual temperature and high temperature sites.
+
+```{r}
+interact_plot(lm.c3, pred = "JJAMAP", modx = "MAT", plot.points = TRUE, 
+              interval = TRUE, int.width = .95, 
+              color.class = "PuRd",x.label = "JJAMAP", 
+              y.label = "Relative C3 Abundance", legend.main = "MAT")
+```
+
+
+\textcolor{red}{\textbf{Question 6} In colder climates, what effect does summer precipitation have on C3 plants? How does the relationship between summer precipitation and C3 abundance change as it gets hotter? Where do you expect the highest relative abundance of C3 plants?}
+
+*In colder climates (based on the -1 SD purple dotted line), relative C3 abundance increases as summer precipitation increases. In hotter climates, relative C3 abundance decreases as summer precipitation increases. The highest relative abundance of C3 plants is seen in really cold climates with a lot of summer precipitation.*
+
+# Examining model fit and assumptions 
+For linear models, (especially those with many predictors), we often check some of the assumptions *after* running the model. With complex models it can become difficult to check whether each variable has a linear relationship with the outcome variable, because there is correlation among each predictor variables. To do so, partial residual plots are often used, a technique that is beyond the scope of this class.
+
+Instead, we will examine model diagnostic plots, which can help visualize whether important assumptions have been violated. We will assume that sites included in the dataset were sampled randomly and that they are independent from one another. To check other assumptions we will examine two different types of plots:
+
+1) To test whether the assumption of homogeneity of variance (homoscedasticity) is met, use a plot of *residuals vs. fitted* values. You are looking for equal variance across fitted values (for instance, no funnel shape) as well as the residuals being equally positive and negative across the entire plot. If your assumption is met, the points should look almost random. A non-random pattern would imply a lack of homoscedasticity, or non-linearity. Both can often be addressed using data transformations or fitting a non-linear function (like a quadratic).
+Here are some examples of poor residual plots: \url{https://onlinecourses.science.psu.edu/stat501/node/279}
+
+
+2) To test whether the residuals are normally distributed, a q-q plot is used. You are looking for the points falling along a straight line. Do not worry too much if some points at the extreme ends fall above or below the line; that is relatively common. Instead, you're looking for an overall pattern that departs from the line. See some examples of good and bad q-q plots: \url{http://www.ucd.ie/ecomodel/Resources/QQplots_WebVersion.html}
+
+Both these plots can be made by using the command `plot(modelname)`. There will be a series of plots shown; hit the enter key in the console to cycle through them.
+
+```{r}
+plot(lm.c3)
+```
+
+
+For now, focus just on the residual vs. fitted and the q-q plot; however, for your project write-up you will want to look at all 4, and should address them in your report. A helpful guide on how to interpret these plots: \url{http://data.library.virginia.edu/diagnostic-plots/}
+
+
+\textcolor{red}{\textbf{Question 7} Do the assumptions of the model appear to be satisfied? If not, describe the plots that are problematic.}
+
+*Q-Q plot looks good, but the residuals vs. fitted plot is funnel shaped, meaning that there is not equal variance across fitted values. Thus, the assumptions of the model do not appear to be satisfied.*
+
+
+We might also want to quantify the overall `fit` of the model. The R-squared is one statistic that can help us do this. 
+
+\textcolor{red}{\textbf{Question 8} What is the R-squared of your model that predicts C3 abundance, and what does this tell you about the predictive ability of the model? Mathematically, what does R-squared mean? (hint: your answer should be phrased as "X percent of the variation in...is explained by...")}
+
+*28.9% (adjusted R-squared value) of the variation in C3 abundance is explained by mean annual temperature and summer precipitation.*
+
+
+# Transformed variables and model output
+Let's practice model fitting and interpretation with data that need to be transformed. We'll switch to a new dataset here. The following dataset gives the number of plant species (`tot.rich`) on 22 different islands. Data are taken from: R.T. McMaster (2005). "Factors Influencing Vascular Plant Diversity on 22 Islands off the Coast of Eastern North America".
+
+We'll test how island area (`area`) predicts plant species richness (`tot.rich`) while controlling for distance to mainland (`dist.mnland`).
+
+First, we'll fit three models:
+1) lm1: no transformations
+2) lm2: log-transform the predictor variable
+3) lm3: log-transform the response variable
+4) lm4: log-transform both the predictor and the response
+
+In the plot below, note how I transform the variable within the `lm` command itself using the `log` function. This will make things easier when plotting the best fit lines and making predictions.
+```{r}
+# read in the data
+plantdiv<- read.csv("http://users.stat.ufl.edu/~winner/data/plant_diverse_island.csv")
+# fit models
+lm1 <- lm(tot.rich~ area + dist.mnland, plantdiv)
+lm2 <- lm(tot.rich~ log(area)+ dist.mnland, plantdiv)
+lm3 <- lm(log(tot.rich)~ area + dist.mnland, plantdiv)
+lm4 <- lm(log(tot.rich)~ log(area) + dist.mnland, plantdiv)
+```
+
+Now, use the `plot` command on each of these models (e.g. `plot(lm1)`) to see how well the models fit assumptions. Do this in the console and not in this R markdown document to save on space. 
+
+You can also plot the raw data and the best fit line of a particular model, for instance, for model 3:
+```{r}
+{plot(log(tot.rich)~area, plantdiv, pch = 16)
+abline(lm3,col = "red")}
+
+{plot(log(tot.rich)~log(area), plantdiv, pch = 16)
+abline(lm4,col = "red")}
+summary(lm4)
+```
+
+To differentiate between these models, think about: how well the best fit line fits the data, whether the assumptions of homoscedasticity and equal variance fit, and how large the residuals are. (Y axis of fitted vs. residual plot).
+
+\textcolor{red}{\textbf{Question 9} Which model seems to fit the data and meet assumptions the best?}
+
+*lm4 (log-transforming both the predictor and the response) seems to best fit the data and meet assumptions the best.*
+
+When variables are transformed, we have to be careful in how we interpret the coefficients.
+
+Suppose our regression is log(weight)~height and the slope is 0.05. The interpretation would be: for each 1 unit increase in height, log(weight) increases by 0.05, or weight increases by exp(5) or 5%.
+
+Suppose our regression is weight ~ log(height) and the slope is 3.4. The interpretation would be:
+for each unit increase in log(height), weight increases by approximately 3.4 lbs. A 1% increase in height would increase weight by 0.034 lbs.
+
+If our regression is log(weight)~log(height), and the slope is 1.2, the interpretation would be:
+For each 1% increase in height, there will be a 1.2% change in weight. 
+
+This website gives a good overview: \url{https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faqhow-do-i-interpret-a-regression-model-when-some-variables-are-log-transformed/}
+
+\textcolor{red}{\textbf{Question 10} For the best model of plant richness and area, interpret the slope of area.}
+
+*For each 1% increase in area, there will be a 0.33% change in plant richness.*
+
+
+
+

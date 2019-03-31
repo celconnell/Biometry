@@ -1,0 +1,266 @@
+---
+title: 'Lab 10: No sleep'
+author: "Celeste Connell"
+date: "11/08/2018"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# General information
+This lab is due November 14th by 11:59 pm, and is worth 10 points (1 point each unless otherwise noted). You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+The goal of this lab is to run and evaluate linear mixed effects models, which contain both fixed and random effects.
+
+# Install the package and read in the data
+We will be using two packages; `lme4`  and `lmerTest` for today's lab. These packages contain additional functions that are not part of R's default capabilities. The `lme4` package fits mixed linear models, and the `lmerTest` package computes p-values for coefficients. To load the packages you must first install them. 
+
+*Run the following code but them comment out after you have installed the packages. A package only needs to be installed once on your computer*
+
+To install the package:
+```{r, warning = FALSE, message = FALSE}
+# install.packages("lme4")
+# install.packages("lmerTest")
+# install.packages("ggplot")
+```
+
+After you have installed the package, you need to make sure it is loaded into your current R session. R does not automatically load all packages you've installed, so each time you re-open R studio, you will want to load any packages that are necessary for what you plan on doing.
+
+To load a package:
+```{r, warning = FALSE, message = FALSE}
+library(lme4)
+library(lmerTest)
+library(ggplot2)
+```
+
+# Background: sleep deprivation dataset
+Today's dataset is taken from a laboratory experiment measuring the effect of sleep deprivation on cognitive performance. Research subjects were chosen randomly from the population of interest (long-distance truck drivers). The trial lasted 10 days, in which the subjects' nightly sleep was restricted to 3 hours per night (this probably wouldn't pass ethics standards today). Each day, the subject's reaction time (in ms) was measured. Therefore, there are multiple measurements for each subject.
+
+Read in the sleep data from the file "sleepData.csv". 
+
+```{r}
+sleepdata <- read.csv("sleepData.csv")
+```
+
+
+Using the `str()` command, take a look at the variables in the dataset. This is a crucial first step in analyzing any new dataset, so it should be familiar to you by now!
+
+You should see from using the `str` command that there is an issue with the formatting for the `Subject` column. What kind of data is contained in the column, and what is the issue with the data format? 
+
+\textcolor{red}{\textbf{Question 1} Use a function to change the format of the `Subject` column so that it can be treated as a random effect. (hint: this function has been covered in lecture, but can be googled!)}
+
+```{r}
+str(sleepdata)
+sleepdata$fSubject <- as.factor(sleepdata$Subject)
+```
+
+# Exploring the data
+We will first run a basic linear regression to test how days of sleep deprivation affects reaction time. 
+
+Start by plotting the data to show how reaction time is affected by the number of days that a subject has been sleep deprived.
+
+\textcolor{red}{\textbf{Question 2} Plot your data, coloring each subject a different color. You do not need to include a legend. Do subjects appear to differ? What kinds of relationship appears between reaction time and days with low sleep?}
+
+```{r}
+#plot(Reaction ~ Days, data=sleepdata, col=sleepdata$fblock
+ggplot(sleepdata, aes(Days, Reaction, color=fSubject)) + geom_point() + geom_line()
+```
+
+*Subjects do appear to differ. But overall, there looks to be an overall trend that shows an increase in reaction time as days increase. individual subjects differ in reaction time, we should use subject as a random effect.*
+
+
+#Analysis 1: simple linear regression ignoring subject ID
+The first model we will run includes reaction as a response variable with days of low sleep as the only predictor. We will for now, ignore the fact that each subject is tested more than once. 
+
+\textcolor{red}{\textbf{Question 3} Run a simple linear regression using reaction time as the response variable and days as the predictor. Interpret the output of the model.}
+
+```{r}
+sleep.lm <- lm(Reaction ~ Days, data=sleepdata)
+summary(sleep.lm)
+```
+
+*The slope of our days line, 10.467, is significantly different from 0 (p=9.89e-15). The slope is significantly different from 0. 28% of the variability in reaction time is explained by number of days with 3 hours of sleep.* 
+
+
+# Analysis 2: Random Intercepts for Subjects
+In the analysis above, each datapoint was treated as a separate observation. 
+
+\textcolor{red}{\textbf{Question 4} What is the problem with this approach, and what assumption does it violate?}
+ 
+*This is violating the assumption of independence, since there are multiple data points for each subject. This is a problem of pseudoreplication.*
+
+
+If we include each subject as a random effect, the linear model will estimate a separate best fit line for each person. In the case of a random-intercept model, each person will have a different intercept, but will have the same slope of the line. We may not particularly care about how each person differs; rather, we want to account for the fact that individuals may differ in their baseline reaction time, and were measured more than once.
+
+To code a random-intercept model, we will add the random variable to our model but precede it with a `1|`. The function `lm` does not recognize random effects, so instead we will want to use the function `lmer` which is part of the `lme4` package.
+
+Finally, we will include the argument `REML = false`. This changes the way that the parameters are estimated and allows us to compare models at the end of the lab. Don't worry too much about this part.
+
+An example: for the pigeon pecking dataset, we wanted to know how pigeon pecking rate was influenced by good vs. bad artwork, and each pigeon was measured four times. If I want to include each pigeon as a random effect with different intercepts, I would use the code:
+
+`pigeon.model <- lmer(Pecking.Rate ~ Art + (1|pigeon), data = pigeonart)`
+
+This model would estimate art as a fixed effect and pigeon as a random effect (denoted by the | sign). *Do not forget the parentheses around the random effect*.
+
+For the following questions, include subjects as a random effect, and days as a fixed effect. 
+
+\textcolor{red}{\textbf{Question 5} Run a model that estimates the effect of sleep deprivation on reaction time, while accounting for each subject as a random effect.}
+
+```{r}
+sleep.lmer <- lmer(Reaction ~ Days + (1|fSubject), data = sleepdata)
+summary(sleep.lmer)
+```
+
+
+\textcolor{red}{\textbf{Question 6} Using the summary function, explore the output of the model. How does it compare to the linear regression you ran in part 1?}
+
+*The slope is the same, 10.4673. However, the p-value and the standard error of this estimate get smaller (<2e-16 and 0.8042, respectively.)*
+
+
+# Model 3: Days and Subjects as fixed effects
+Instead of including subject as a random-intercept term, each subject could be modeled as a fixed effect, which would also give a separate intercept for each person.
+
+To explore this, run the model, including both subject and day as fixed effects. You will want to look carefully at the output of the model, including estimates of slopes, significance, standard error, and degrees of freedom.
+
+\textcolor{red}{\textbf{Question 7} What happens to the model when you include subject as a *fixed* effect? When might this approach be better or worse than using subject as a random effect?}
+
+```{r}
+sleep.lm.subject.fixed <- lm(Reaction ~ Days + fSubject, data = sleepdata)
+summary(sleep.lm.subject.fixed)
+```
+
+*slope and standard error of the slope remain the same (10.4673 and 0.8042, respectively.) Our p-value of the slope also stays the same. However we now have a lot of degrees of freedom (18 and 161). It appears that it's okay in this case since we still got significant values, but with an increase in degrees of freedom, we're decreasing the power of our test, which makes it harder to detect true significance.* 
+
+
+# Model 4: random slope + intercept models
+It is believable that there are baseline differences among individuals in their reaction times, but it's also possible that each person has a different response to sleep deprivation. Some subjects might tolerate sleep deprivation really well, while others may be more sensitive. 
+
+In other words, it is reasonable to expect that each person might have a different slope of their best-fit-line, in addition to a different intercept. This would be modeled as a random-slope. To do a random slope, instead of coding `(1|random.variable)` you would put `(explanatory|random)`. *Do not forget the parentheses around the random effect*.
+
+An example: I might want to test the effect of minutes of exercise on heart rate. We might assume there's an overall fixed effect of exercise (that it would increase heart rate), but each person might have a different response to exercise depending on their cardiovascular fitness. Thus each person would have a different response to exercise (different slope) as well as a different baseline heart rate (intercept) that we want to account for. The model would be coded as follows: 
+
+`lmer(heartrate ~ exerciseTime +(exerciseTime|Person),  data = mydata, REML = FALSE)`
+
+\textcolor{red}{\textbf{Question 8} Run a linear model which tests the effect of sleep deprivation on reaction time, including a random-slope AND random-intercept for subject ID.}
+
+```{r}
+sleep.lmer.random.slope <- lmer(Reaction ~ Days + (Days|fSubject), data = sleepdata)
+summary(sleep.lmer.random.slope)
+```
+
+
+Not all random variables need to have random slopes, and these models can be confusing to interpret and plot. Therefore, it is a good idea to think carefully about whether you expect your data to require random slopes (plotting the raw data is a good way to examine this as well). Another option is to fit both models (one with random intercept only, and one with both random slopes and random intercepts) and then evaluate how well the models perform. We will do this below.
+
+# Model evaluation
+We have now run 4 separate models:
+
+1. Reaction as a function of days (without accounting for differences between subjects)
+
+2. Reaction as a function of days, with subjects having different random intercepts
+
+3. Reaction as a function of days, with each subject as a fixed effect
+
+4. Reaction as a function of days, with subjects having random intercepts and slopes
+
+Which model is the best, and the one you'd want to report as your "final model"? There are several schools of thought on how to select a "best" model, but first, we should consider assumptions.
+
+Model 1 does not include subjects, thus this model violates a crucial assumption. No matter how well the model appears to fit the data, using it would mean committing a cardinal sin of statistics. So, let's throw it out.
+
+Therefore, let's consider models 2-4. 
+
+## Using Diagnostic Plots to compare models.
+One method for comparing models would be to look at model fit and diagnostics. How large are the residuals? Are model assumptions met? If a model has bad diagnostic plots and violates assumptions, you should consider discarding it as an option. 
+
+To plot diagnostics for `lm` models (no random effects; Model 3), you'll need to run the code `plot(your.lm.model.name)` as demonstrated in the past. This will show you the fitted vs residual plot, qqplot, and cook's distance plot.
+
+To plot diagnostics for `lmer` models (with random effects; Models 2 and 4), you'll need to run the code below, replacing `your.lm.model.name` with whatever you saved your lmer model as:
+```{r, include = FALSE, eval=FALSE}
+# to view fitted vs. residuals plots
+plot(sleep.lmer)
+
+# to view qqplots
+{qqnorm(resid(sleep.lmer))
+ qqline(resid(sleep.lmer))}
+```
+
+\textcolor{red}{\textbf{Question 9}Compare the residual vs. fitted and qqplots for Models 2-4. What model seems to fit the assumptions best?}
+
+*It looks like model 4 fits the assumptions best.*
+
+```{r, include = FALSE}
+# your code here
+```
+
+*Note* I've added include = FALSE to the code chunk above so that your plots are not displayed in the final knitted version (to save on space)
+
+
+
+## Using ANOVAs to compare models
+We can also use ANOVAs to more objectively compare models (after we've removed models that violate assumptions). The code for this is `anova(model1, model2)`. We always want to put the simpler model first, followed by the more complex. Confusingly, this doesn't actually use an ANOVA; rather it uses a *likelihood ratio test*. We won't get into the mathematical details, but if the test is significant, the more complex model is significantly better at explaining the response variable than the simpler model. This test penalizes models for having lots of different parameters; for instance, if you include 20 predictor variables in your model, you might have a very high R-squared and low residuals, but your model is overly complex and might not have good predictive power (a problem called "over-fitting").
+
+An important caveat is that to use the `anova` function, the models need to be *nested*, meaning: the first model must be a subset of the second model. For instance, we could compare: Model 1: Y ~ A + B and Model 2: Y ~ A + B*A + C.  However, we could not compare: Model 1: Y ~ A + C and model 2: Y ~ A + B, because the first contains predictors that are not in the second model.
+
+\textcolor{red}{\textbf{Question 10} Use the likelihood ratio test to compare model 4 to model 2. Which model is better? Do your model diagnostics support the choice of that model?}
+
+```{r}
+anova(sleep.lmer, sleep.lmer.random.slope)
+```
+
+*Since our p-value is significant (0.04905), the more complex model (Model 4) is better at explaining the response variable. This matches my diagnostic!*
+
+# Optional Example and Bonus Question: plotting the output of mixed effect models
+This example will show you one method to display multiple best fit lines with random slopes and intercepts. There are many other ways you might represent the output of a mixed effects model, including coefficient plots, which we won't cover this semester. Feel free to look online and explore different types of plots for your final project.
+
+In this example, we'll run a sample mixed effects model using the built-in data `cake`. This experiment tested the effect of baking temperature on the structure of cakes. The hypothesis was that higher baking temperature made the cake more resistant to breaking (the cake could sustain a higher angle of torque before breaking). For more information use `?cake`.  There are several recipes that we want to account for as a random effects.
+
+*In this example, don't worry about the error message from the lmer model*
+
+The model:
+```{r, warning = FALSE, message = FALSE}
+cake.model <- lmer(angle~ temp + (temp|recipe), cake)
+```
+
+We will be using a popular graphics package called ggplot, which has some nice options for customizing graphs. First, install ggplot by un-commenting and running the code below:
+
+```{r, warning = FALSE, message = FALSE}
+#install.packages("ggplot2")
+library(ggplot2)
+```
+
+
+In the code below, I will plot the relationship between temperature and the angle of breakage, with a separate best fit line for each recipe (we expect some recipes might make the cake stronger than others). 
+
+The first line of code gives the x variable (`temp`) y variable (`angle`), and color codes the points by the random effect (`recipe`). For our class dataset, you'd want to substitute `Days` instead of temp,  `Reaction` instead of angle, and `Subject` instead of recipe.
+
+The second line gives the number of rows you want in the final plot. It makes a new plot for each level of the random variable recipe, and spreads them over 3 rows.  You can experiment with the `nrow` argument to get the plot looking nice.
+
+The `geom_point` argument tells ggplot that you want a scatterplot with each observation as a point. You do not need to change this line of code.
+
+The `geom_line` argument tells ggplot to draw a best fit line, using predictions from the model. The first argument of the `data = ` argument is the name of the original dataframe, in this case `cake`. The second argument is the `predict` function, which uses the model to make predictions. You'd want to put in the model which used random slopes and intercepts.
+
+You can also add a legend; in this case, each panel is labeled by recipe type so it is not necessary.
+
+```{r}
+cake.model <- lmer(angle~ temp + (temp|recipe), cake)
+
+ggplot(cake, aes(x = temp, y = angle, colour = recipe)) +
+  facet_wrap(~recipe, nrow=3) +
+  geom_point() +
+  geom_line(data = cbind(cake, pred = predict(cake.model)), aes(y = pred)) +
+  theme(legend.position = "none")
+```
+
+\textcolor{red}{\textbf{BONUS} Create a similar plot, showing the relationship between reaction time and days of sleep deprivation, with each panel representing a different subject.}
+
+```{r}
+ggplot(sleepdata, aes(x = Days, y = Reaction, colour = fSubject)) +
+  facet_wrap(~fSubject, nrow=3) +
+  geom_point() +
+  geom_line(data = cbind(sleepdata, pred = predict(sleep.lmer.random.slope)), aes(y = pred)) +
+  theme(legend.position = "none")
+```
+

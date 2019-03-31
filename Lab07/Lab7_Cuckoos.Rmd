@@ -1,0 +1,188 @@
+---
+title: 'Lab 7: Cuckoos'
+author: "Celeste Connell"
+date: "10/18/2018"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# General information
+This lab is due October 24th by 11:59 pm. This lab is worth 10 points (each question is worth 1 point unless otherwise noted). You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+The goal of this lab is to run and interpret ANOVA tests.
+
+# Background
+The European cuckoo does not look after its own eggs, but instead lays them in the nests of birds of other species. This is known as *brood parasitism*. It has been documented previously that cuckoos have evolved to lay eggs that are colored similarly to the host birds' eggs. Is the same true of size -- do cuckoos lay eggs of different sizes in nests of different hosts? We will investigate this question, using the data file "cuckooeggs.csv". This file contains data on the lengths of cuckoo eggs laid in a variety of other species' nests.
+
+#Exploring the data and testing assumptions
+
+First, read in the datafile "cuckooeggs.csv" and take a look at the data.
+
+\textcolor{red}{\textbf{Question 1 (0.5 pt)}  Look at the structure of the cuckoo data. What is the explanatory variable? What is the response variable?}
+
+```{r}
+cuckoo.data <- read.csv("cuckooeggs.csv")
+str(cuckoo.data)
+View(cuckoo.data)
+```
+
+*Explanatory variable: Host species*
+*Response variable: Cuckoo egg length*
+
+\textcolor{red}{\textbf{Question 2 (0.5 pt)} How many species of birds were measured in this study? Using the `str` function (on the entire dataframe object) or `levels` function (on the column of interest) is an easy way to check this.}
+
+```{r}
+str(cuckoo.data)
+```
+
+*6 levels*
+
+
+To test whether the data are distributed normally *within each group*, use a Shapiro-Wilk Normality Test (see lecture 12: violated assumptions for how to implement and interpret this, or use R's help function for `shapiro.test`.) You'll need to run a test for each species, meaning you'll want to use the subset function to break up your dataset by species (see the first lab for how to do this).
+
+\textcolor{red}{\textbf{Question 3} Using the Shapiro-Wilk test for normality, evaluate whether cuckoo egg length data is normally distributed *within each group*. Interpret the output of the test.}
+
+```{r}
+#Data subset
+Hedge.Sparrow <- subset(cuckoo.data, Host.Species == "Hedge Sparrow")
+Meadow.Pipit <- subset(cuckoo.data, Host.Species == "Meadow Pipit")
+Pied.Wagtail <- subset(cuckoo.data, Host.Species == "Pied Wagtail")
+Robin <- subset(cuckoo.data, Host.Species == "Robin")
+Tree.Pipit <- subset(cuckoo.data, Host.Species == "Tree Pipit")
+Wren <- subset(cuckoo.data, Host.Species == "Wren")
+
+
+#Shapiro wilk tests
+?shapiro.test
+shapiro.test(Hedge.Sparrow$Egg.Length)
+shapiro.test(Meadow.Pipit$Egg.Length)
+shapiro.test(Pied.Wagtail$Egg.Length)
+shapiro.test(Robin$Egg.Length)
+shapiro.test(Tree.Pipit$Egg.Length)
+shapiro.test(Wren$Egg.Length)
+
+hist(Meadow.Pipit$Egg.Length)
+```
+
+*Cuckoo egg length data is normally distributed within each group except for the Meadow Pipits (p=0.0094). But, I graphed it and it looks pretty normally distributed, so I feel comfortable running an ANOVA without transforming the data.*
+
+
+#Running the ANOVA test
+Recall, the purpose of this research was to test whether the eggs laid by cuckoos were larger or smaller depending on which host bird's nest was being parasitized. The theory is, if cuckoos are able to mimic the host bird's own eggs, the host bird is less likely to notice the brood parasitism. 
+
+\textcolor{red}{\textbf{Question 4} Give the null and alternative hypotheses for an ANOVA which tests whether egg length differs between host species.}
+
+*Null hypothesis: Mean egg length is the same for all 6 host bird species.*
+*Alternative hypothesis: At least one mean of the 6 host bird species is different from the others.*
+
+
+\textcolor{red}{\textbf{Question 5} Run an ANOVA using the function given in lecture slides. Report the test statistic and P-value.}
+
+```{r}
+cuckoo.anova <- aov(Egg.Length~Host.Species, data=cuckoo.data)
+summary(cuckoo.anova)
+```
+
+*F statistic: 10.39*
+*P-value: 3.15e-08*
+
+
+\textcolor{red}{\textbf{Question 6} Interpret the results of your ANOVA. In your answer, make sure to re-visit the initial question/experimental background and explicitly state what the p-value is the probability of.}
+
+*Egg length differed significantly by host species (F(df=5, df=114)=10.39; P-value=3.15e-08). Note that this p-value is the probability of obtaining this test statistic (or one more extreme) if the null hypothesis were true. Thus, host species does appear to have some impact on cuckoo egg length.*
+
+
+\textcolor{red}{\textbf{Question 7} Besides the assumption of independence and random sampling, what are the assumptions of the ANOVA test? Are they met? You will likely need to do additional coding to evaluate all the assumptions.}
+
+```{r}
+aggregate(Egg.Length ~ Host.Species, data = cuckoo.data, FUN = var)
+```
+
+*Assumptions of ANOVA:*
+*1. Normal distributions for each population/group*
+*2. Equal variances for all populations*
+*_____*
+*By running Shapiro Wilks earlier, we already established that each population has a normal distribution. In the code above, I analyzed the variances for each population. It looks like they are roughly equal (all within a ten-fold difference from each other.) Thus, all assumptions of ANOVA are met.*
+
+
+# Plotting the data
+Graphical representation of the data will help you interpret the results of an ANOVA. The results of a statistical test should *always* be accompanied by an informative plot. In fact, usually making the plot is the first step you would do, before even running the test. 
+
+If you are still not sure how to make stripcharts, there are a number of resources:
+
+1) Lecture 4 on graphics 
+
+2) Lab 6 stripchart example
+
+3) A new Rmd document on D2L (under Lab/R resources) that gives examples of all the plots we've learned so far. 
+
+\textcolor{red}{\textbf{Question 8} Create a stripchart to display the egg length data from the cuckoo dataset. Remember to label your axes appropriately. Add error bars and points for each species' mean as demonstrated above. You will have to modify example code to account for 6 groups (species) whereas previous examples have had a different number of groups.}
+
+```{r}
+mean.lengths <- aggregate(Egg.Length~Host.Species, cuckoo.data, FUN = mean)
+mean.lengths
+
+sd.lengths <- aggregate(Egg.Length~Host.Species, cuckoo.data, FUN = sd)
+sd.lengths
+
+#{
+#  stripchart(Egg.Length~Host.Species, vertical = TRUE, method = "jitter",
+#           pch = 16, col = "dodgerblue", data = cuckoo.data,
+#           ylab = "Egg length", xlab = "Host bird species")
+
+#points(Egg.Length~Host.Species ~ c(1:length(levels(mean.lengths$cuckoo.data))), 
+#       pch = 16, col = "black", cex = 1.5)
+
+#segments( x0 = c(1:length(levels(mean.weights$Diet))), x1 = c(1:length(levels(mean.lengths$Egg.Length))),
+#          y0 = mean.length$weight - sd.lenghts$weight,
+#          y1 = mean.lengths$weight + sd.lengths$weight,
+#          col = "black", lwd=2)
+#}
+```
+
+
+
+# Post Hoc Tests
+Remember that an ANOVA tells you only whether the means differ among groups, not which exact groups differ from one another. To know which specific groups differ, we need to do post-hoc tests, which compare means among all pairs, accounting for multiple testing. 
+
+The function `TukeyHSD` does pairwise post-hoc tests to compare each pair of species. The basic code is:  `TukeyHSD(yourmodelname)`. The `p adj` column gives a corrected P-value for that particular comparison.
+
+\textcolor{red}{\textbf{Question 9} Run a Tukey test on the cuckoo ANOVA model. Are eggs laid in Tree-Pipit nests significantly different than those laid in Robin's nests?}
+
+```{r}
+TukeyHSD((cuckoo.anova))
+```
+
+*Tree Pipit-Robin: P-value of 0.6159630. Because our p-value is greater than 0.05, there is no significant difference between cuckoo egg lengths in tree-pipit and robin nests.*
+
+
+# Next steps in research
+
+\textcolor{red}{\textbf{BONUS (optional)} Re-read the original background presented at the beginning of this lab. What might be an experiment you would run, or additional analyses you would want to conduct to further investigate whether variation in cuckoo egg size is an adaptation to disguise their eggs from the host?}
+
+*To test if cuckoo birds can control size difference in their eggs, I would simply conduct this experiment in a more controlled environment. I would have one species of cuckoo bird, and two species of "host" birds, that lay eggs that are significantly different in weight. Then, I would run a two sample t-test in the lengths of the cuckoo eggs in each nest and determine if they are different.*
+
+
+# Your independent project
+By this week, you should have read through the independent project descriptions and identified the dataset you want to work with, or have thought about a dataset you've already collected that you can use. The following questions are to help you get started on this; you are not committed to sticking with the same questions you identify this week.
+
+With the dataset you want to work with, answer the following questions. 
+
+\textcolor{red}{\textbf{Question 10} Give a 2-3 sentence description of the kind of data you are working with, including things like: study system, response and predictor variables of interest, main purpose of the study. Make sure you are re-phrasing background in your own words.}
+
+*This is a very large dataset that contains 21,322 observations of amniotes (including birds, mammals, and reptiles). Observations include 35 different studied/measured parameters. I am interested in whether mammals and birds have different gestation lengths. (Sorry Wynne, this will definitely change.)
+
+\textcolor{red}{\textbf{Question 11} Read in the dataset and display the structure of the data using the `str` command. What do you learn from this?}
+
+```{r}
+amniote.data <- read.csv("amniote_database.csv")
+str(amniote.data)
+```
+

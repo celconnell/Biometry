@@ -1,0 +1,339 @@
+---
+title: 'Lab 1: Introduction to R'
+author: "Celeste Connell"
+date: "8/30/2018"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+subtitle: Introduction to R, Summary Statistics of Data
+---
+
+# General information
+This lab is due Wednesday, September 5th by 11:59 pm and is worth 5 points. You must upload your .rmd file to the dropbox on D2L. You do not have to knit this lab to PDF. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# How to use the pdf and R markdown document
+Download the .pdf and .rmd documents for each week's lab and keep in the same folder. Enter your name and date above where it says "Your Name Here". The .rmd file is intended for you to edit and input your answers. The .pdf contains the same exact information but rendered in an easier-to-read format. I suggest reading through the pdf document, and then switching to .rmd when you are asked to input code or give an answer. 
+
+# Objective
+The goal of this lab is to familiarize yourself with using R, learn the basics of data manipulation in R, and to explore descriptive statistics in R.
+
+# Basics of R
+R is a versatile computer language that operates as both an excellent statistical package and a programming language. In actuality, the lines between these will blur for us, as we will do our own programming but also will explore built-in statistical packages once we have the conceptual frameworks mastered. R has become the 'computer language for ecology,' meaning that knowing R will help you reproduce and modify others' results (as R code is commonly published online with papers) as well as in future labs.
+
+At a very basic level, R can operate as a calculator. When you open RStudio, your screen will likely be split into four panels. At the bottom is the *console* and at the top, you have your R Markdown or R Scripts open. In the console, you will see a command prompt, $>$. Go ahead and type in an equation, say $2 + 2$, and hit ENTER. You see that R prints the answer, just like using a calculator. Now, try typing in some other basic arithmetic commands, like $2 - 2$, $2 * 4$, $4/2$, and $4 ^ 2$.
+
+For reproducibility, it is best to type all non-exploratory code in an R Script or R Markdown file. That way, you can go back and follow each step. For labs, all final code must be written in the R Markdown document. Otherwise, it will be impossible to know what you did. To do so, we can type code directly into the R Markdown document. To separate code from text, we use the following syntax: $```{r}$ with curly brackets around the r begins a part of code and $```$ denotes the end of code. When you export (or "knit") the .rmd to a PDF, the code is evaluated and output is displayed. 
+
+To write comments on your code you can use the hashtag or pound symbol. Whatever is typed after the hashtag will be ignored by R's computer. This is helpful for describing what each line of your code does.
+
+```{r}
+# code goes here. We'll use the 2 + 2 example
+2 + 2
+```
+
+
+Note that the $```{r}$ and $```$ do not render (print) in the pdf, but rather tell R that this is a code section. The pound sign is used in code to denote comments. This helps you (or others) follow your logic. When you enter code into an R Markdown document or R Script, to evaluate the code, you can highlight the line of code you want to evaluate and then press Ctrl+Enter (Windows) or Command+Return (Mac). You do not need to "knit" your R markdown into PDF each time you evaluate code. 
+
+# Using the assignment operator
+
+Instead of just typing in an equation, say $4 * 8$, you will often want to save the output value to use later on. You do so using the *assignment operator*, $ <-$. For example,
+
+```{r}
+x <- 4 * 8
+```
+
+The solution to the equation $4*8$ is saved as a variable called x. You could substitute "x" for any other letter or variable name you like. When you assign variables using $<-$, the answer is not automatically printed, but is rather stored as an *object*. You can easily see the answer by just typing in $x$ to the console or on your R Markdown sheet.
+
+Sometimes you will see the $=$ sign used instead of $<-$. They are equivalent in most cases, though most R users agree that $<-$ should be used for assigning variables. 
+
+```{r}
+x <- 4 * 8
+x # prints the value now saved as x 
+a = 4 * 8
+a # prints the value now saved as a
+```
+
+\textcolor{red}{Q1: You can  use previously assigned variables in future operations. For example try multiplying $x$ by 5 and then adding $12$ to this value. Save this answer as a new variable (call it something new!). Now take this new variable and divide it by $2.2$, again saving your answer as a new variable. Print out the value of this new variable.}
+
+```{r}
+something.new <- (x * 5) + 12 
+something.new
+barack.obama <- something.new / 2.2
+barack.obama
+
+```
+
+Note that R is case-sensitive. Try typing $X$ on the console. What does R return?
+
+We don't want to store all the variables we create forever. Best practice is to export important datasets into .csv or .txt files (or save the R script that created them) rather than rely on stored objects in R. It is usually a good idea to start your R coding session with a "clean slate" by removing variables stored from previous sessions. The *rm* function is used to do this. Note that after running the line of code below, our "environment" section is blank. 
+
+```{r}
+rm(list=ls())
+```
+
+Now, try to print the variable x you assigned above, by typing it into your console and hitting return. What happens?
+
+# Getting help in R
+
+R has wonderful help and example code. If you click on *Help* on the right hand side of RStudio above the lower right panel, you can see manuals and resources both for R and RStudio.
+
+Additionally, if you type ? followed by an R command, R will open documentation on the command. [Note: "commands" are codes in R that perform some type of task, such as *mean()*, *sum()*, or *plot()*]. 
+For example:
+
+```{r}
+?mean
+```
+
+This is helpful when you can't remember all of the arguments for a command you are using (much more on this later). Additionally, typing *example(command)*, provides example code on how to use the given function. 
+
+Since R is open-source, there are great resources and question forums online as well. If there is a function you think R should be able to do, you are probably right! Google is a great source for R. Also, stack overflow has answers to thousands of questions from R users. Likely someone has asked a similar question that is already answered on stack overflow.
+
+\textcolor{red}{Q2: One of the many built-in commands in R is the square root function, sqrt(). Enter code for opening the R Help documentation on the square root function.}
+
+```{r}
+?sqrt
+```
+
+\textcolor{red}{Q3: Now, use the square root command to find the square root of 9.999, saving the answer as variable, $sqEx$. Show the answer as well.}
+
+```{r}
+sqEx <- sqrt(9.999)
+sqEx
+```
+
+
+# Vectors, matrices, and data frames
+
+## Vectors
+Vectors, matrices, and data frames are all ways to hold multiple data elements, called *elements*, of the same type. Elements can be numbers or character strings (i.e. words). Vectors can be created in multiple ways. The most common are to use the $c()$, $seq()$, or $rep()$ functions.
+
+The $c()$ function combines multiple elements together, while $seq()$ automatically lists a sequence of values, allowing you to specify the starting value, ending value, the amount you count by, or the number of elements you want to include in a given vector. Type $?seq()$ for more information. Finally, $rep()$ allows you to repeat an element a certain amount of times. Let's look at some examples. Run and explore the following code:
+
+```{r}
+ex1 <- c (1, 5, 8, 9)
+ex2 <- c( 1, 10:15) # What does ex2 look like? How many elements?
+
+# Multiple functions can be called at the same time.
+ex3 <- c(1, 5, seq(from=1, to=10, by=2.2)) # What is this code doing?
+ex4 <- c(rep(5, 3), rep(3, 5), seq(from=-5, to=0))
+```
+
+Make sure you understand the difference between $c()$, $seq()$, or $rep()$!
+
+To extract elements from a vector, you use square brackets, $[]$. For example, if you want the third element from $ex1$:
+```{r}
+ex1[3]
+```
+
+Another handy function for vectors is $length()$, which gives you the number of elements in a vector.
+```{r}
+length(ex4)
+# Or, to find the value of the last element in ex4,
+ex4[length(ex4)]
+```
+
+We don't have to just use numbers when creating vectors or assigning variables in R. We can also use characters. 
+```{r}
+birds <- c("Mourning Dove", "Downy Woodpecker","American Robin")
+weights <- c(120, 28, 80)
+# Note how R denotes number vs. characters
+class(birds)
+class(weights)
+```
+
+\textcolor{red}{Q4: Now, add a fourth bird to our vector of birds. If you don't know, try googling first! Hint: what element number should it be? Display the vector to make sure it worked.}
+
+```{r}
+birds[4] <- "penguin"
+birds
+View(birds)
+```
+
+
+# Matrices
+
+A matrix is a 2-dimensional version of a vector, containing data in rows and columns. There are several different ways of creating matrices. The first is by using the feollowing function: matrix(data = , nrow =, ncol =). You can specify the values you want, the number of rows in your matrix, and the number of columns. For example, if you want to create a matrix called mat1, filled with NA that is 3x2, you would generate the following code:
+```{r}
+mat1 <- matrix(data=NA, nrow=3, ncol=2)
+mat1
+```
+
+Or, you can specify specific values by combining the c() function and matrix() function. For example:
+```{r}
+mat2 <- matrix(data=c(1,2,3,4,5,6), nrow=2, ncol=3)
+mat2
+```
+
+You can access specific elements again using square brackets, like with vectors. This time though, you need to specify both the row and the column of a given element. For example:
+```{r}
+mat2[1, 2] #gives the element in the first row, second column 
+mat2[2, 1] #gives the element in the second row, first column
+```
+
+Or, you can extract all elements of a given row by only specifying the row of interest.
+```{r}
+mat2[1, ] # gives all elements of the first row
+mat2[, 1] # gives you the first column
+```
+
+\textcolor{red}{Q5: Run and explore the following code. What is it doing?}
+
+```{r}
+mat2[1, ] <- c(11, 12, 13)
+mat2
+sum(mat2[,3])
+```
+
+Answer: It's changing all of the elements in the first row to "11, 12, & 13", and then calculating the new sum of column 3.
+
+Equivalent to how length() gave you the number of elements in a vector, dim() gives you the number of rows and columns in a matrix.
+```{r}
+dim(mat2)
+```
+
+There is another, often easier way to create a matrix, using the command cbind to combine vectors into a matrix
+```{r}
+vector1<-c(2,4,6,8)
+vector2<-c(1,3,5,9)
+mat3<-cbind(vector1, vector2)
+mat3
+```
+
+In what order/direction does cbind combine vectors?
+Answer: cbind combines vectors down by column, rather than across the row.
+
+# Data Frames
+
+Data frames are commonly used in statistical analyses. A dataframe is analogous to a typical excel table that you would use to organize your data, with a header row and each column containing a different type of data. Different columns can be of different classes. In a vector or a matrix, all data needs to be the same type, such as numeric or a character. However, in a data frame, you can mix numbers, characters, etc. across columns, which, you can imagine, is quite useful. For example, say you have sample sites across an elevational gradient and cover of different species at each site. A nice structure for your data would then be a column of site names (characters), followed by multiple columns of numeric values. 
+
+Let's go ahead and look at look at a pre-loaded data frame in R, called CO2. You can print the whole dataframe if you type CO2 in your console (make sure you pay attention to capitalization!)
+
+\textcolor{red}{Q6: Describe what is included in each column in the CO2 dataframe. Note: refer to the R help  to do this.}
+
+CO2 data frame has 84 rows and 5 columns 
+Column 1: Plant type 
+Column 2: Origin of the plant (Quebec or Mississippi)
+Column 3: Treatment (chilled or nonchilled)
+Column 4: Ambient carbon dioxide concentrations (unit: mL/L)
+Column 5: Carbon dioxide uptake rates (units: umol/m^2 sec)
+
+You can print the names of each column in a data frame using the function *names()*. You can access a single column in a dataframe using the dollar symbol and can use square brackets, just like with matrices, to access a single element. You can preview the first few rows of a data frame using the function *head()*. You can also subset your data using the *subset()* command. For example: 
+
+```{r}
+# First, let's rename CO2, since we'll want to manipulate it ourselves. 
+CO2ex <- CO2
+# Print each of the column names
+names(CO2ex)
+# Print just one of the columns, the conc column
+CO2ex$conc
+# Or, say you want to print the 77th value in the uptake column
+CO2ex$uptake[77]
+# Display the first few rows of the dataframe
+head(CO2ex)
+# Display the 3rd column
+CO2ex[,3]
+# Display the 5th row (notice how we display rows vs. columns)
+CO2ex[5,]
+# See what type of data are stored in each column of the dataframe
+str(CO2ex)
+# Say we want to save as a separate data frame only the 
+# information from Quebec
+quebecData <- subset(CO2ex, Type=="Quebec")
+# print out to make sure the subset worked
+quebecData
+```
+
+\textcolor{red}{Q7: Print out the entry in the 10th row and 3rd column of the subsetted Quebec data}
+
+```{r}
+quebecData[10, 3]
+```
+
+Syntax is extremely important in R and in the beginning, you will likely be producing some frustrating error messages. The use of parentheses, capital letters, commas, etc. makes a big difference in how code is evaluated. Unfortunately the error messages in R don't always help diagnose the problem. It's good to get practice interpreting these errors and de-bugging your code! The lack of an error code doesn't mean your code ran correctly, either. It is good practice to view data frames, vectors, plots, etc. after you perform some type of command to make sure it worked the way you intended it to.
+
+\textcolor{red}{Q8: Debug the following lines of code so that they perform the requested function. To do this, you must first uncomment the lines of code (not the comments themselves) by deleting the pound sign. Then run the line of code, correct the errors, and re-run to make sure it worked.}
+
+```{r}
+# 1. View the first few lines of code
+head(CO2ex)
+
+# 2. Subset data from Mississippi
+# Hint: print out the subsetted data frame. Did it work?
+missData <- subset(CO2ex, Type=="Mississippi")
+missData
+
+# 3. Extract the 50th row of the C02ex dataframe and save it as a new vector
+Fifty <- CO2ex[50, ]
+```
+
+# Loading data
+
+Often you will want to load your own data into R. R can read .csv and .txt files but not .xls files. We will read in the file Pelts.csv, which can be found on D2L. This file contains a list of the number of recorded pelts collected by the Hudson Bay Company from $1752$ to $1819$.
+
+To input the data into R, we will use the function $read.csv()$. To read a csv file, it first has to be saved into your working directory, which is likely the same directory (or folder) as this R Markdown file. To find your current working directory type the function *getwd()* into the console. Your directory should print to the console. For example, mine prints "/Users/wynnemoss/Dropbox/BIOMETRY/Labs".
+
+To change your working directory, you use the function $setwd()$. Say that I have Pelts.csv saved in my Biometry folder in another folder called Lab1. I could then type $setwd("Lab1")$. Or, equivalently, I could type $setwd("/Users/wynnemoss/Dropbox/BIOMETRY/Labs/Lab1")$. Once in the correct working directory, you can load the csv file using $read.csv()$.You want to assign the loaded data to an object in R so you can work with it. For example, you could type $pelts <- read.csv("Pelts.csv")$. 
+
+A helpful shortcut, especially if your directory path name is complicated: to change the working directory with less typing, click the "..." in the upper left of the files panel. Navigate to the folder you want to be your working directory. Click open. Now, click the dropdown menu labeled "More", and hit "set as working directory".
+
+Check to see what your current working directory is. If needed, change your working directory. Read in Pelts.csv.
+
+```{r}
+getwd()
+pelts <- read.csv("Pelts.csv")
+View(pelts)
+```
+
+
+Another helpful shortcut: to open a file not saved in your working directory, try $mydata <- read.csv(file.choose())$. The "file.choose" command allows you to navigate to the file using your cursor (rather than coding in the file path). Try with the pelts data.
+
+You can see what type of data pelts is by using the *class()* or *str()* functions. The function *summary()* also gives a nice overview of your data. Try all three out. 
+
+```{r}
+class(pelts)
+str(pelts)
+summary(pelts)
+```
+
+
+\textcolor{red}{Q9: What type of object is pelts? What other information do you get from using the $str()$ function?}
+
+Answer: "pelts" is a data frame. The (str) function also tells us that there are 68 observations of 2 variables. Additionally, it outputs the first few values for each column.
+
+
+\textcolor{red}{Q10: Calculate the mean number of pelts harvested between $1752$ and $1761$. Use any of the functions we've gone over already (like the subset, length, mean, or sum functions). Store your answer as an object and print it. Comment your code so that a reader could follow your logic.}
+
+```{r}
+nrow(pelts)
+pelts.subset <- subset(pelts, date >=1752 & date <= 1761)
+pelts.1752 <- subset(pelts, date == 1752)  #creates subset of just the year 1752
+View(pelts.1752)
+nrow(pelts.subset)
+mean.subset <- mean(pelts.subset$no.pelts)
+mean.subset
+```
+
+
+# Making your own data frame
+
+Often you will load in previously compiled data (say, from an excel workbook converted to .csv). Sometimes you will want to create your own data frames from scratch in R. We will start by creating a few different vectors and then combine them into a dataframe. Here is an example of a dataframe with 3 columns:
+```{r}
+fish_type<- c("lake trout", "brown trout", "lake trout", "rainbow trout", "brown trout")
+parasite<- c("yes", "no", "yes", "yes", "no")
+length_fish<- c(40, 63, 48, 51, 69)
+df<-data.frame(fish_type,parasite,length_fish)
+class(df)
+summary(df)
+df
+```
+
+# Knitting your Rmd document
+You will turn in your biometry assignments in as both an .Rmd document (like the one you are currently working in) and a PDF. The PDF version is a nicely formatted document which will display results and graphics. The process of making the PDF version is called "knitting". Try kitting the current document by hitting the icon that says "knit" in the menu bar above, or choosing "knit document" from the File menu.
+
+If there are errors in your code, the knitting process does not work. If you get an error message, navigate to the line listed and de-bug the code. 
+
+Still not working? If you are at the end of your rope and cannot fix broken code (and you've already tried meeting with your TA!), you may "comment out" the line that does not work using a # before the line of code, and then knit the PDF.
+
+This week you do not need to turn in a knitted PDF, but upload just the .rmd file.

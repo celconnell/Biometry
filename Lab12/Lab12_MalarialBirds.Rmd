@@ -1,0 +1,229 @@
+---
+title: 'Lab 12: Malarial Birds'
+author: "Celeste Connell"
+date: "11/29/2018"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# General information
+This lab is due December 5th by 11:59 pm and is worth 10 points (each question is 1 point unless otherwise noted). You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+This lab will use generalized linear models, which incorporate non-normal response variables.
+
+# This week's dataset
+The data are adapted from the study "Alternative reproductive strategies in white-throated sparrows are associated with differences in parasite load following experimental infection" by R.J. Boyd et al. in the journal Biology Letters (2018).
+
+In this study, the researchers tested whether sparrow reproductive strategy impacted their resistance to infection by malaria. There are two types of sparrows: *white-striped* sparrows are aggressive, sing more, and do not provide parental care, while *tan-striped* sparrows have lower gonadal steroid levels, are less aggressive, and guard their nestlings and mates. Researchers inoculated each bird with a small dose of *Plasmodium* parasites, which cause malaria. After two weeks, they recorded the number of parasites in the bird's blood sample; if it exceeded a threshold, the bird was marked as infected.
+
+Evolutionary theory suggests that there may be a trade-off between energy allocation to reproduction vs. disease resistance. By that logic, birds investing more energy in parental care and reproduction (e.g. *tan-striped* birds) should be more susceptible to infection. 
+On the other hand, birds that invest in traits used in sexual selection (e.g. aggression, singing) likely have higher androgen (testosterone) levels, which can reduce immune resistance and increase susceptibility to infection. Thus, this theory predicts that the dominant, aggressive *white-striped* birds would have higher infection rates.
+
+We'll investigate which theory is supported using two types of GLMs.
+
+# Exploring the data
+
+Start by reading in the data, in the file "BirdInf.csv". Use the `head` and `str` functions to take a look at the formatting of the dataset
+
+```{r}
+BirdData <- read.csv("BirdInf.csv")
+```
+
+
+
+The columns included are: 
+
+  1) `BirdID`: the individual ID of a bird 
+  2) `LabID`: the ID used in the lab when doing blood testing
+  3) `Sex`
+  4) `Morph`: whether the bird is tan-striped ("tan") or white-striped ("white")
+  5) `Day14PL`: the count of plasmodium parasites at day 14 (end of study)
+  6) `InocOutcome`: whether a bird became infected by plasmodium parasites
+  7) `Mass`: the weight of the bird in milligrams.
+  
+\textcolor{red}{\textbf{Question 1} What percent of white birds became infected? What percent of tan birds became infected? Hint: you could use the `subset`, followed by the `table` function (see last lab) to find this answer. Do not count by hand!}
+
+```{r}
+subset.white <- subset(BirdData, Morph=="white")
+table(subset.white$InocOutcome)
+subset.tan <- subset(BirdData, Morph=="tan")
+table(subset.tan$InocOutcome)
+5/14
+4/14
+```
+
+*35.7% of white birds became infected, and 28.6% of tan birds became infected.*
+
+
+
+\textcolor{red}{\textbf{Question 2 (0.5 pt)} What was the median parasite count for white birds vs. tan birds? You can use your subsetted data here; or try the `aggregate` function.}
+
+```{r}
+median(subset.white$Day14PL)
+median(subset.tan$Day14PL)
+```
+
+*1.5 for white birds, and 0.5 for tan birds.*
+
+
+
+# Part I: Predicting Malarial Infection
+
+The column `InocOutcome` gives the outcome of the experiment; whether a bird resisted infection or not. We will see what predictors influence the probability a bird became infected.
+
+\textcolor{red}{\textbf{Question 3} What kind of variable is `InocOutcome`? What kind of model should be used if this is the response variable?}
+
+*Categorical variable, with two levels. So, we should use a binomial model.*
+
+
+Use the function `levels` on this column, e.g. `levels(bird$InocOutcome)`. 
+
+```{r}
+levels(BirdData$InocOutcome)
+```
+
+We can see that the reference level is "infected" (it is listed first). Therefore "infected" will count as a 0 and "resisted" will count as a 1. This probably doesn't fit our intuition, since *not* having an infection seems like the default level. So, let's adjust this variable.
+
+\textcolor{red}{\textbf{Question 4 (0.5 pt)} Using the `factor` command (in last week's lab), make "resisted" the reference level. Make sure you save this as the InocOutcome column in your dataset.}
+
+```{r}
+BirdData$InocOutcome <- factor(BirdData$InocOutcome, levels = c("resisted", "infected"))
+```
+
+
+Now, you will run the appropriate model. The R code for running this kind of model was introduced in this week's lecture; so take a look at the PowerPoint before you begin!
+
+\textcolor{red}{\textbf{Question 5} Run the appropriate model to predict whether a bird became infected or not. Include the following predictors: the morph of the bird, sex, and its mass. No interactions are needed.}
+
+```{r}
+glm.binom <- glm(InocOutcome ~ Morph + Mass + Sex, data=BirdData, family=binomial)
+summary(glm.binom)
+```
+
+
+\textcolor{red}{\textbf{Question 6} Interpret the outcome of the model. For the variables that are significant, interpret the estimate (examples given in PowerPoint from lab). Give a final conclusion from this model that re-visits the initial purpose of the study; this conclusion should include relevant estimates, SE's and P-values.}
+
+*Morph, mass, and sex have no significant effects on whether a bird became infected by plasmodium parasites.*
+
+
+# Part II: Predicting Infection Load
+
+The column `Day14PL` gives the count of Plasmodium cells in each bird's blood sample. 
+
+\textcolor{red}{\textbf{Question 7} What makes the variable `Day14PL` non-normal? What kind of model should be used if this is the response variable? To help you answer this question, plot a histogram of the variable.}
+
+```{r}
+hist(BirdData$Day14PL)
+```
+
+*Day14PL has a strong right skew. There are a lot of "0" values. We should use a Poisson model.*
+
+\textcolor{red}{\textbf{Question 8} Run the appropriate model to predict the number of parasites in each bird. Include the following predictors: the Morph of the bird, sex, and its mass. No interactions are needed.}
+
+```{r}
+glm.poisson <- glm(Day14PL ~ Morph + Mass + Sex, data=BirdData, family=poisson)
+summary(glm.poisson)
+```
+
+
+## Scaling variables
+The variable "mass" is measured in milligrams, therefore each unit of mass added represents a very small change in mass. Therefore, the estimate of the slope of mass is minuscule! GLMs may have difficulty estimating the effects of coefficients that are on very different scales than other predictors. This will be especially true once you start fitting GLMMs. 
+
+To help the model, we can scale this variable so that it is in units of standard deviation. You will add a new column to your dataset, called `scaledMass`. For instance: `birddata$scaledMass <- scale(birdData$Mass)` 
+
+Add a new column called `scaledMass` to your dataframe:
+
+```{r}
+BirdData$scaledMass <- scale(BirdData$Mass)
+```
+
+The `scale` command takes each mass value and subtracts the mean. Then it divides each one by the standard deviation. So, a scaled mass of 0 means that bird has a mass equal to the average, a scaled mass of +1 would mean that bird is 1 standard deviation higher than the mean.
+
+\textcolor{red}{\textbf{Question 9} Re-run the above model using scaled mass, along with the other predictors.}
+
+```{r}
+glm.poisson.scaled <- glm(Day14PL ~ Morph + scaledMass + Sex, data=BirdData, family=poisson)
+summary(glm.poisson.scaled)
+exp(glm.poisson.scaled$coefficients)
+exp(confint.default(glm.poisson.scaled))
+```
+
+
+If you compare the summaries of the previous two models, you should see that not much has changed; except now the slope for scaledMass means the change in log(plasmodium count) for each 1 standard deviation increase in mass. Before, the slope for Mass was the change in log(plasmodium count) for each 1 milligram increase in mass.
+
+Scaling variables is a good tool to have in your pocket; a good rule of thumb is that if your predictor variables are on very different scales (e.g. temperature varying from 0 to 55, and area varying from 1100 to 25090), you may want to scale them before running the model.
+
+\textcolor{red}{\textbf{Question 10} Interpret the outcome of the model with scaledMass, Sex, and Morph as predictors. For the variables that are significant, interpret the estimate (examples given in PowerPoint from lab). Give a final conclusion from this model; which theory outlined in the background is supported? This conclusion should include relevant estimates, SE's and P-values. Your answer should be about a paragraph long!}
+
+*Morph, scaled mass, and sex are all significant predictors of the count of plasmodium parasites at day 14. White morphs show a 55% decrease in parasite count compared to tan morphs (95% CI: 41-66%). Additionally, each one unit increase in scaled mass was associated with a 75% decrease in parasite count (95% CI: 70-80%). Finally, males exhibit a 73% increase in parasite count compared to females (95% CI: 31-129%).*
+
+
+
+# Part III: comparing models
+In the first model you ran (predicting infection status), you should have found that the predictor variable Morph did not have a significant impact on the probability of infection. But, is the model including all three of the predictors (Morph, Sex, and Mass) better than a null model? 
+
+We can compare these models using *AIC*. AIC is a measure of how well the model might expect to perform if we wanted to predict new data. A *lower* AIC indicates the model is better. If model 1 has an AIC of 101, and model 2 has an AIC of 60, we would consider model 2 to be better at predicting new data.
+
+AIC is a combination of (1) how well the model fits the raw data and (2) how many parameters the model has. A model with lots of parameters (many estimates) might fit the data really well, but it is considered "over-fitting". AIC penalizes models with too many parameters.
+
+To compare AICs, use the command `AIC(yourmodelname)`.
+
+An example:
+```{r}
+iris1 <- lm(Sepal.Length~Sepal.Width*Species, iris) # an interactive model
+iris2 <- lm(Sepal.Length~Sepal.Width + Species, iris) # an additive model
+iris3 <- lm(Sepal.Length~1, iris) # a null model
+AIC(iris1)
+AIC(iris2)
+AIC(iris3)
+```
+
+This example shows that the second model (additive only) has the lowest AIC, by about 3 points. An AIC difference of 2 is considered a significant difference between models. Therefore, we would conclude that the additive model is probably the best one for predicting Sepal length, compared to a null model or one with interactions.
+
+## Why use AIC?
+Recall that in previous labs, we used likelihood ratio tests as well as model diagnostics to distinguish what parameters improved a model and how well the model fit. 
+
+*Why use likelihood ratio tests?* Likelihood ratio tests let you compare two models that are nested, and has the advantage of providing a P-value, telling you how much an added parameter has improved the model. If you have run a *mixed model*, this is the only way to obtain a p-value for a predictor. So, you'll probably use a likelihood ratio test if you have random effects in your model.
+
+*Why use AIC?*. Likelihood ratio tests only compare nested models, therefore they have to have a common set of parameters, and you are comparing the addition of an extra parameter. Suppose you wanted to compare models that are not nested, for instance, Model 1:`Sepal.Length ~ SepalWidth` and Model 2: `Sepal.Length ~ PetalWidth + Species`. AIC can help you compare these two models. One caveat is that if you have missing data, you can't compare models with AIC. If you have a lot of different predictor variables and you aren't sure which combination is the best, AIC is a good tool to use. However, it won't provide you with P-values.
+
+*Why use diagnostic plots?* Diagnostic plots are another way of looking at how well your model fits the data. They aren't usually used to compare two different models, but rather to check assumptions of a given model. However, you might use them to compare models if you wanted to see whether a transformation has helped improve your model. You should always take a look at the diagnostic plots for models you run! A bad diagnostic plot means that you cannot trust the output of a model. However, diagnostic plots are not useful for general-ized linear models (when the response variable is non-normal) so if you are using Poisson or Binomial regression, you should expect diagnostics to look funky.
+
+## Your turn: comparing models
+Let's compare the very first model you ran (predicting infection status with Morph, Sex, and Mass) to a null model (with no predictor variables). 
+
+\textcolor{red}{\textbf{Question 11} Compare AIC values from your first model to a null model. Which model is better at predicting infection status?}
+
+```{r}
+null.lm.bird <- glm(InocOutcome~1, BirdData, family=binomial)
+AIC(null.lm.bird)
+AIC(glm.binom)
+```
+
+*The first model is better at predicting infection status than the null model (AIC of 14.76 and 37.16, respectively.*
+
+# Bonus questions (only 1 will be graded)
+
+\textcolor{red}{\textbf{BONUS} Run a negative binomial model to predict plasmodium counts by mass, morph, and sex. Using AIC, is this better than the Poisson regression?}
+
+```{r}
+library(MASS)
+negativebinom <- glm.nb(Day14PL ~ Morph + scaledMass + Sex, data = BirdData)
+AIC(negativebinom)
+AIC(glm.poisson)
+```
+
+*The negative binomial model is a much better model for predicting plasmodium counts by mass, morph, and sex compared to the Poisson (AIC of 146.85 and 378.28, respectively.)*
+
+
+\textcolor{red}{\textbf{BONUS} Plot the relationship between plasmodium count, morph, and mass. A good plot should include axis labels, a measure of uncertainty (error bars or upper and lower best fit lines), raw data and legends, if necessary. Updated plotting document on D2L may be useful here.}
+
+```{r}
+# your code here
+```
+

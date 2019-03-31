@@ -1,0 +1,234 @@
+---
+title: "Lab 3: Guppies"
+author: "Celeste Connell"
+date: "9/13/2018"
+output: pdf_document
+subtitle: Hypothesis Testing
+---
+```{r setup, include=FALSE}
+
+```
+
+
+# General information
+This lab is due September 19 by 11:59 pm. **Upload the R Markdown document and the knitted PDF or HTML to D2L.** The lab is worth 10 points (1 point per question). You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+### Important: some notes on knitting
+*Before you knit:* save your R markdown file as something other than Lab 3.Rmd; i.e. append your last name to it. Then you can knit your .Rmd file to a PDF (or .Doc if the PDF doesn't work) and you won't get it confused with the version you've downloaded from me. To knit your .Rmd, click the arrow next to the knit icon, on the menu above your coding window and select "Knit to PDF". 
+
+Your .Rmd will not knit if you have any errors in code. After you try to knit your document, a tab will appear in the console below. If you click on the R markdown tab it will tell you whether the knitting worked. If it failed, R usually gives an error referring to a specific line, and usually shows a snippet of the code that made the error. However, it will show only the first bug it encountered when reading through the document, so there may be additional errors. Thus it is an iterative process: knit, fix bug, knit again, fix next bug, and so on until you get your final HTML or PDF! 
+
+If you have errors you are not able to correct but you still want to knit, you have two options. (1) If you know what line of code produces the error, you can just add a # in front of it to comment the line out. (Don't delete the buggy code--that way I can give you feedback). (2) if all else fails, copy this code into the beginning of your .Rmd document, under the line that says {r setup, include=FALSE}:
+knitr::opts_chunk$set(error = TRUE)
+
+Note that option 2 works in a pinch but isn't ideal because it doesn't force you to go through the process of iteratively fixing your errors. I suggest it as a Wednesday afternoon last resort.
+
+# Objective
+In this lab you will learn how to implement hypothesis testing in R by using the binomial test of proportions. You will also answer several conceptual questions about hypothesis testing.
+
+#The data: sexual selection and parasite infection in guppies
+
+The guppy (*Poecilia reticulata*) is considered a model organism for studies of sexual selection because female guppies exhibit preference in their choice of male guppies. Females tend to choose males with certain display traits, which are thought to be indicators of fitness. One theory is that females are able to detect which males are resistant to certain parasites, and are more likely to choose those males. This question was investigated in a well-known study by C.E.J. Kennedy, J.A. Endler, S.L. Poynton, and H. McMinn, published in 1987 in the journal Behavioral Ecology and Sociobiology. Our lab will be loosely based upon this study, which you can feel free (but are not required) to read. A copy is posted on D2L. 
+
+### Experimental Design
+
+In this hypothetical experiment (which I've simplified for the purposes of this lab) the researchers infected 30 male guppies with a non-lethal nematode parasite (*Camallanus cotti*). They also obtained 30 uninfected male guppies which underwent a de-worming treatment. From these male guppies, they randomly drew a pair of males for their experiment. The pair consisted of one randomly selected infected male and one randomly selected uninfected male. 
+
+Female guppies were drawn randomly from a population of wild guppies in Trinidad. For each trial, researchers placed one female guppy in a tank with a pair of male guppies. The female was able to swim beyond a partition to enter the side of the tank with either the uninfected male or the infected male. After 20 minutes, researchers recorded which side of the tank the female was on. If the female swam to the uninfected male, a 1 was recorded. If the female swam to the infected male, a 0 was recorded.
+
+This was repeated 25 times, each time using a separate female. 
+
+Researchers used this data to investigate whether or not females displayed preference for males based on their infection status. In other words: do females choose uninfected males more often than expected by chance?
+
+\textcolor{red}{\textbf{Question 1:} (a) What is the independent variable in this study? (b) What is the dependent variable? (c) What kinds of variables (categorial or continuous) are they?}  
+
+*The independent variable in this study is male infection status (whether or not the male is infected with Camallanus cotti). The dependent variable is female choice (whether she chooses the infected or the uninfected male). These are both categorical variables.*
+
+
+\textcolor{red}{\textbf{Question 2:} (a) What is the null hypothesis the researchers are testing? (b) What is the alternative hypothesis? Hint: think about whether a one-tailed or two-tailed hypothesis test is appropriate here.}
+
+*Null hypothesis: Female guppies do not display preference for males based on their infection status.*
+*Alternative hypothesis: Female guppies DO display preference for males based on their infection status (We should use a two-tailed test because it's possible they would favor parisitic males for some reason.)*
+
+
+###Experimental results
+
+The researchers finished their experiment and their 25 observations yielded the following data: 
+1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1.
+
+\textcolor{red}{\textbf{Question 3:} Store this dataset as an object in R. [Hint: since there is only one column of data, you can use a vector (e.g. myvector <- c(1, 0, 0,...) rather than a data frame.]}
+
+```{r}
+guppy.data <- c(1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1)
+```
+
+
+To keep consistent, from here on out let's refer to the event of a female choosing an uninfected male as a "success" since the event is coded as a 1. 
+
+\textcolor{red}{\textbf{Question 4:} If the null hypothesis is true, what is the probability of observing the exact number of successes we observed? Hint: use the formula given in lecture, and to save time, you may want to google how to do a factorial (!) in R. Show your code.}
+
+```{r}
+p.expected <- 0.5
+n = length(guppy.data)
+X = sum(guppy.data)
+n.choose.x <- (factorial(n)) / (factorial(X)*factorial(n-X))
+p.observed <- n.choose.x * p.expected^X * (1-p.expected)^(n-X)
+p.observed
+```
+
+*Assuming the null hypothesis is true, the probability of the exact number of successes we observed is 0.014.*
+
+
+\textcolor{red}{\textbf{Question 5:} Calculate our estimated proportion, or $\hat{p}$ (p-hat). Do this using functions in R, such as sum() and  length().} 
+
+```{r}
+p.hat <- sum(guppy.data) / length(guppy.data)
+p.hat
+```
+
+*0.72, or 72%. So, 72% of female guppies chose to mate with uninfected males.*
+
+
+\textcolor{red}{\textbf{Question 6:} Calculate standard error of $\hat{p}$ (p-hat). The formula is in your lecture notes. Do the calculation in R and show your code below.}
+
+```{r}
+SE.p.hat <- sqrt((p.hat*(1-p.hat))/(n-1))
+SE.p.hat
+```
+
+
+###Testing the hypothesis: P-values
+Let's test the hypothesis by calculating a P-value from the observed data. We will do this by comparing the observed data to a null distribution. 
+
+Using the formula you employed in question 4, we can determine the probability of observing a given number of "successes" under the null hypothesis. If we calculate the probability of all possible observations, we have a *null distribution*. Luckily you don't have to do this by hand; R has some handy functions to do it for you.
+
+###An example problem
+Let's run through an example first. Say we want to know whether frog eggs are more likely to develop into male or female frogs. Our null hypothesis is that males and females are equally likely. If we sampled 7 eggs, there are 8 possible observations we could make: 0/7 end up being males, 1/7 are males, 2/7 and so on up to 7/7. We could calculate the probability of each of these different observations under the null hypothesis to give us a *null distribution*.
+
+First, lets create a vector that gives all the possible observations we might see:
+```{r}
+observations <- seq(0,7)
+observations
+```
+Next, the dbinom function calculates the probability of a given observation, given a null probability. Let's calculate the probability of having 2 males out of our 7 samples, under the null hypothesis that males and females are equally likely.
+```{r}
+prob.2 <- dbinom(x = 2, size = 7, prob = 0.5) 
+prob.2
+```
+The `x=` argument gives the number of "successes" (in this case males) in our dataset. The `size=` argument gives the number of observations or trials (i.e. the number of eggs sampled), and the `prob=` is the proportion you expect if the null hypothesis is true (50% males). If the null hypothesis is true, there is a 16.4% chance of observing 2 males out of 7 eggs. The dbinom function uses the same formula that you calculated by hand in question 4.
+
+To get the full null distribution, we must calculate the probability for each of the 7 possible observations. To do this, we replace the 2 in `x = 2` with our *vector* of possible observations, `observations`, so that R can calculate the probability of all 7 possibilities. 
+```{r}
+null.probabilities <- dbinom(x=observations, size = 7, prob = 0.5)
+# create a dataframe
+null.distribution <- data.frame(observations,null.probabilities)
+colnames(null.distribution)<-c("Observation (# male frogs)", "Probability")
+null.distribution
+barplot(height = null.probabilities, names = observations, 
+        ylab = "Probability", xlab = "Number of male frogs", col="turquoise")
+```
+
+This bar plot gives the probability of a given observations IF the null hypothesis is true; meaning, if males and females are equally likely. 
+
+Given an observation of 2 males out of 7 eggs, we want to know if this is sufficient evidence to reject the null hypothesis that males and females are equally likely. We first need a P-value. 
+
+The P-value is *not* the probability of observing 2 males under the null hypothesis, which would be 16.4%, but rather, the probability of observing a result *as or more extreme* than 2. What observations would be "as or more extreme"? First, we need to know what the most likely observation is under the null. It is our null probability multiplied by the number of trials, or in our case: 0.5 * 7 = 3.5. It's most likely that we would observe 3.5 males if the null is true. So our observation of 2 is 1.5 away from the expected observation. Any observation that is 1.5 or more away from 3.5 is considered "as or more extreme".
+
+The P-value is therefore: 
+The probability of observing 2, 1, or 0 males (in a one-sided test) or
+The probability of observing 2, 1, 0, 5, 6, or 7 males (in a two-tailed test).
+
+In other words, for two-tailed test: P is the probability of getting 2 or less males, plus the probability of similarly extreme results at the other tail of the distribution (5 or more males). \
+
+In this case it makes sense to run a two-tailed test, since males could be more likely than females OR less likely than females. Run each line of code below to compute the p-value by hand.
+
+```{r}
+P.value <- sum(null.probabilities[observations <= 2] + null.probabilities[observations >= 5])
+P.value
+```
+The code `null.probabilities[observations <= 2]` gives all the probabilities for observations less than or equal to 2 and `null.probabilities[observations >=5` gives all the probabilities for observations greater than 5. We sum them because we are interested in observations that are 2 or 1 or 0, or 5, 6, or 7. In this case our P value is 0.45. There is a 45% chance that we'd find this many males (or more extreme scenarios) if the null is true. In other words: our data aren't "Extreme" enough to reject the null. We don't have evidence that males are more or less likely than females.
+
+IMPORTANT: if the null expectation is 0.5 (either observation is equally likely), the binomial distribution is symmetric, and we can simply multiply the lower tail by 2. 
+
+```{r}
+P.value <- 2 * sum(null.probabilities[observations <= 2])
+P.value
+```
+
+###Calculate P-value of guppy data
+Next, you'll calculate the P-value from the guppy dataset. It's a good idea to start by generating and plotting the null distribution as I've shown above, so you can see which tail (the left or right) your observation lies on. 
+
+\textcolor{red}{\textbf{Question 7:} Calculate the P-value from the guppy dataset. Follow the steps outlined below.  Remember to choose the null proportion, the number of successes, and number of trials that apply to the guppy data. You may also want to change the <= in the P.value code to apply to the correct tail of the distribution you are measuring.}
+
+```{r}
+# 1. Create a vector of all possible observations
+observations.guppy <- seq(0,25)
+# 2. Calculate the probabilty of each observation under the null hypothesis.
+guppy.null <- dbinom(x =X, size = n, prob = p.expected) 
+guppy.null
+null.probabilities.guppies <- dbinom(x=observations.guppy, size = n, prob = p.expected)
+null.probabilities.guppies
+# 3. Calculate p for a two-tailed test.
+P.value <- sum(null.probabilities[observations <= 2] + null.probabilities[observations >= 5])
+P.value.guppy <- 2 * sum(null.probabilities.guppies[observations.guppy >= 18])
+P.value.guppy
+# 4. BONUS (optional) plot the null distribution, by modifying the frog null distribution code above
+barplot(height = null.probabilities.guppies, names = observations.guppy, 
+        ylab = "Probability", xlab = "Number of successes (female choosing an uninfected male", 
+        col="plum1")
+
+```
+
+*0.04328525*
+
+
+\textcolor{red}{\textbf{Question 8:} Based on your observed data, is female guppy mate choice influenced by parasite infection? Make sure to refer to the null hypothesis and interpret the P-value in your answer.}
+
+*Since our obtained p-value is less than 0.05, we reject the null hypothesis. Thus, we have reason to believe that female guppy mate choice IS influenced by parasitic infection.*
+
+
+###Using R's built-in function
+
+As demonstrated in class, there is a much easier way to calculate the P-value for a binomial test. The example code below tests whether an observation of 3 male frogs out of a sample of 10 eggs deviates from the null expectation of 50% male frogs:
+
+```{r}
+binom.test(3, n = 10, p = 0.5, alternative = "two.sided")
+```
+
+Use the `binom.test` function, modifying it as you see fit, to get a P-value for the guppy data. Make sure it matches your P-value above. If not, go back and troubleshoot the P-value you got by hand!
+
+```{r}
+guppy.binom.test <- binom.test(X, n = n, p = p.expected, alternative = "two.sided")
+guppy.binom.test
+```
+
+###The importance of sample size
+
+Now, say the researchers only tested 7 female guppies, instead of 25. The observed data are: 0, 1, 0, 1, 1, 1, 1. 
+
+\textcolor{red}{\textbf{Question 9:} Calculate $\hat{p}$ (p-hat) and its standard error with the new sample. Again, don't count up the number of sucesses in your head, but create a vector with the observations and use R's embedded functions.}
+
+```{r}
+guppy.data.7guppies <- c(0, 1, 0, 1, 1, 1, 1)
+p.expected <- 0.5
+p.hat.7 <- sum(guppy.data.7guppies) / length(guppy.data.7guppies)
+p.hat.7
+SE.p.hat.7 <- sqrt((p.hat.7*(1-p.hat))/(7-1))
+SE.p.hat.7
+```
+
+*With the new sample of 7, $\hat{p}$ equals 0.714, with a standard error of 0.1826. Compared to our larger sample of 25, p-hat is about the same (p-hat for our larger sample is 0.72). However the standard error of this value from our larger sample was much smaller (0.09).*
+
+How does this p-hat compare to the observed p-hat from Question 5?
+
+\textcolor{red}{\textbf{Question 10:} Now calculate and interpret the P-value from the new set of 7 observations. You may use the binom.test() function. Why does the P-value change drastically, even though p-hat is similar to our first set of observations?} 
+
+```{r}
+guppy.binom.test.7 <- binom.test(sum(guppy.data.7guppies), n = length(guppy.data.7guppies),
+                                 p = p.expected, alternative = "two.sided")
+guppy.binom.test.7
+```
+
+*With our smaller sample of 7, our p-value goes up to 0.4531. With this analysis, we would retain the null. P-hat shouldn't change much with different sample sizes, but p-values are very dependent on sample size.* 
+
+

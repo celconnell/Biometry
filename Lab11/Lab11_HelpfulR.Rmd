@@ -1,0 +1,304 @@
+---
+title: 'Lab 11: Helpful R tips and tricks'
+author: "Celeste Connell"
+date: "11/20/2018"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# General information
+This lab is due November 28th by 11:59 pm. This lab is worth 10 points (each question is 1 point unless otherwise noted). You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+You will be learning some further skills to manipulate and analyze data in R, which may be useful in working with your own datasets.
+
+# This week's dataset
+This week's data come from a made-up greenhouse experiment to measure grass germination and growth. Seeds from three species of grasses were planted in three treatment conditions: Dry, Wet, or None (ambient conditions). Each seed was tagged with a seed ID to keep track of individual plants. Each month for four months, researchers measured plant germination as a 0 (not germinated) or a 1 (germinated). If the plant germinated, its final height in inches was measured in week 4. If it did not germinate, the height was recorded as a 0.
+
+First, we will read in the dataset giving the plant observation data.
+The columns of this dataset are:
+
+  1) `Tag_ID`: the individual ID of a seed 
+  2) `GermVisit_1`: Plant germination status on visit 1 (1 is germinated)
+  3) `GermVisit_2`: Plant germination status on visit 2
+  4) `GermVisit_3`: Plant germination status on visit 3
+  5) `GermVisit_4`: Plant germination status on visit 4
+  6) `Height`: Final height of the plant in visit 4 (in inches)
+  
+```{r, results = "hide"}
+PlantMeas <- read.csv("PlantMeas.csv")
+head(PlantMeas)
+```
+
+# Merging Data
+It is not uncommon for researchers to put one kind of data (like observational data) in one excel file, and another kind of data (such as experimental design or species-level data) in another excel file. Joining these two datasets is relatively easy in R.
+
+The `PlantMeas` dataset, which we just read into R, contains measurements of individual plants, but it does not tell us what treatment was applied to each of these plants. 
+
+The dataset `PlantPlots` contains information on where each of these seeds was planted (`Block`), the species of each TagID (`Species`) and the treatment it received (`Treatment`). 
+
+```{r, results = "hide"}
+PlantPlots <- read.csv("PlantPlots.csv")
+head(PlantPlots)
+```
+
+Let's merge these two together. Notice that both datasets contain a variable, `Tag_ID` which links the two datasets together. 
+
+The `merge` function takes three pieces of information: the first dataset you want to merge (`PlantPlots`), the second dataset you want to merge (`PlantMeas`) and the column that links each row together `Tag_ID`. 
+```{r}
+PlantData <- merge(PlantPlots, PlantMeas, by = "Tag_ID")
+```
+
+\textcolor{red}{\textbf{Question 1} Try merging PlantPlots and PlantMeas by the column `Treatment`. What happens and why?}
+
+```{r}
+#PlantData_Treatment <- merge(PlantPlots, PlantMeas, by = "Treatment")
+```
+
+*It won't merge, because PlantMeas does not contain the "Treatment" column. Note: Had to comment this code out for it to knit.*
+
+# Exploring attributes of the data
+Now we have one dataframe that contains the Tag ID for each individual seed, its species, its germination data, and the treatment and block it was grown in.
+
+How much data do we have?
+```{r}
+nrow(PlantData) # the data has 144 rows (or individual plants)
+```
+
+
+We can also look at an individual data record. The 30th plant in the dataset is a *Andropogon geradii* individual that germinated in week 1 and was grown in wet conditions.
+
+```{r}
+PlantData[30, ]
+```
+
+Let's subset the data to look at all the plants in wet conditions. There are 48 plants grown in this treatment, and the mean height of them is 14.7 inches.
+```{r}
+wet <- subset(PlantData, Treatment=="Wet")
+nrow(wet)
+mean(wet$Height)
+```
+The `table` function can be used to get some information on the numbers of datapoints in certain categories. For instance, the following code shows how many plants of each species were included in the dataset. We can see that there are 48 seeds for each species.
+
+```{r}
+table(PlantData$Species)
+```
+
+The `unique` function can be used to see how many different types of data are in a certain column. For instance, we can see how many treatments were used in the experiment. The first line gives the unique values found in the Treatment column: control, dry, and wet. 
+
+```{r}
+unique(PlantData$Treatment)
+```
+
+\textcolor{red}{\textbf{Question 2} (a) Use the `subset` function to find all of the plants grown in Block 4. (b) Use the `unique` function to see what treatment was applied to Block 4. (c) Use the `nrow` function to see how many total plants were grown in Block 4 (d) use the `table` function to see how many of each species were grown in Block 4.}
+
+```{r}
+block4 <- subset(PlantData, Block==4)
+unique(block4$Treatment)
+nrow(block4)
+table(block4$Species)
+```
+
+*b) "None" was applied to block 4.*
+*c) 24 total plants grown in block 4.*
+*d) 8 Andropogon gerardii, 8 Bouteloua gracilis, 8 Buchloe dactyloides.*
+
+# Tidying data
+Sometimes the way we format our data collection file works well in the lab or the field, but does not play nicely with R. Scientists often spend *most* of their data analysis time wrestling their data into a format that R can work with. Luckily, there are some tools in R that can help "re-shape" your data into a format that R can use for statistical tests and plotting.
+
+To see how this works, let's look at a third data table, `BlockData`, that relates to  `PlantData`. This table gives information on soil moisture in a given block over the course of the experiment (e.g. `SoilVisit_1` is the soil moisture level of that block in visit 1).
+
+```{r, results = "hide"}
+BlockData <- read.csv("BlockData.csv")
+head(BlockData)
+```
+
+Suppose we wanted to plot how soil moisture changes over time (`Soil~Time`), with a separate color for each block.
+
+\textcolor{red}{\textbf{Question 3} What is the issue with the way the data are formatted?}
+
+*They're in column by soil visit. We need to have our data in column by visit and soil moisture.*
+
+To manipulate the data into a format that can be used by R, we want to have one column for soil moisture, and one column for time. The "tidy" data format means that each row is an observation, and each column is one type of variable.
+
+To make our data behave, we will use a package called `tidyr`. This package does a whole lot of data manipulations and has many useful tools. 
+
+Uncomment and run the following code to install the package.
+```{r, evaluate = FALSE}
+#install.packages("tidyr")
+```
+
+Now, we will use the `gather` function to take our `SoilVisit_1` to `SoilVisit_4` columns and put them all into one column called `SoilMoisture`.
+
+The arguments of the `gather` function are:
+
+  1) `data=` gives the name of the dataframe you want to manipulate
+
+  2) `key` = gives the name of the new column that will describe how the original columns differed. Our original columns, SoilVisit_1, SoilVisit_2, SoilVisit_3, and SoilVisit_4 differ in that they are describing different timepoints or visits. So, our new column will be called `Visit`. R will place the old column names into each row of this column.
+
+  3) `value` = gives the name of the new column that will contain the actual values. Since all of these columns are measuring soil moisture, we will call the new column `soilmoisture`.
+  
+  4) The last argument `SoilVisit_1:SoilVisit_4` = gives the columns that contain the same type of variable (all the soil moisture columns are between `SoilVisit_1` and `SoilVisit_4`).
+  
+```{r, results = "hide", message = FALSE, warning = FALSE}
+library(tidyr)
+head(BlockData)
+BlockData <- gather(data = BlockData, key = Visit, 
+                    value =soilmoisture, SoilVisit_1:SoilVisit_4 )
+BlockData
+str(BlockData)
+```
+
+This is the kind of fuction you have to practice with a few times before it becomes intuitive, so if it's still confusing, you are not alone! For more information: https://rpubs.com/bradleyboehmke/data_wrangling
+
+But, hopefully you can see that before, our table had one row per block, with 4 measurements of soil in separate columns. Now, our table has 4 rows for each block. 
+
+\textcolor{red}{\textbf{Question 4} With the new `BlockData`, we want to plot `soilmoisture` over visit. What is the problem with the format of the data?}
+
+*"Visit" needs to be numeric. *
+
+Let's get the `Visit` column into a numeric formula. The following code splits the values in the `Visit` column (e.g. SoilVisit_1) into a value giving the number of the visit.
+
+The `separate` function takes the following arguments:
+
+  (1) `data=` contains the dataframe you want to manipulate
+  
+  (2) `col=` contains the name of the column you want to split in two
+  
+  (3) `into=` gives names of new columns after the split
+  
+  (4) `sep=` gives the character that splits the data in two. In this case we want to split 
+  SoilVisit_2 into one column that has the part before the underscore and one column after. The second column will contain the part after the underscore (the digit). 
+
+```{r, results = "hide"}
+BlockData <- separate(data = BlockData, col = Visit, into = c("Delete","Visit"), sep = "_")
+head(BlockData)
+```
+
+Now you can see, we have split the old column which had values like SoilVisit_1 and SoilVisit_2 into two new columns, one called `Delete` and one called `Visit`. Let's get rid of the `Delete` column; it doesn't contain useful information.
+
+```{r, results = "hide"}
+BlockData$Delete 
+BlockData$Delete = NULL
+```
+
+\textcolor{red}{\textbf{Question 5} With the new `BlockData`, plot soil moisture (on the y axis) by visit (on the x axis). Color the points so that each Block has a different color.}
+
+```{r}
+library(ggplot2)
+ggplot(BlockData, aes(Visit, soilmoisture, color=Block)) + geom_point() + geom_line()
+?ggplot
+```
+
+
+\textcolor{red}{\textbf{Question 6} Use the `aggregate` function to get the mean soil moisture level for each block. Save this as a new dataframe, and merge it with the `PlantData` dataframe. Save this merged data as `PlantDataFull`.}
+
+```{r}
+meansoilperblock <- aggregate(soilmoisture ~ Block, data=BlockData, FUN=mean)
+PlantDataFull <- merge(meansoilperblock, PlantData, by = "Block")
+```
+
+If you have done this correctly, the following command will show that there are 10 total columns in the new dataset.
+
+```{r}
+ncol(PlantDataFull)
+```
+
+# Dealing with factors
+Oops, we found out that one of the plants in the dataset was misidentified! All of the plants ID'd as *Andropogon gerardii* ("Big Bluesetem") are actually *Schizachyrium scoparium* ("Little Bluestem"). 
+
+We will replace all of the entries that currently say *Andropogon gerardii* with the correct species name. 
+
+For categorical variables, we can use the the `levels` command and re-name one of the categories. For instance, with the iris dataset, I'll rename *virginica* to *californica*.
+
+```{r}
+levels(iris$Species) # we can see that virginica is the third level; this is the level we want to change
+levels(iris$Species)[3] <- "californica" # change the third level to californica 
+levels(iris$Species) # success! the third one was re-named as californica
+```
+
+\textcolor{red}{\textbf{Question 7} Use the `levels` function to replace *Andropogon gerardii* with the correct species name in the `PlantDataFull` dataframe.}
+
+```{r}
+levels(PlantDataFull$Species)
+levels(PlantDataFull$Species)[1] <- "Schizachyrium scoparium"
+levels(PlantDataFull$Species)
+```
+
+
+\textcolor{red}{\textbf{Question 8} Subset the data so that you have only rows with a height > 0 (germinated plants). Run a mixed linear model to analyze how height is related to plant species and treatment. Include block as a random effect. You do not need to include interactions. }
+
+```{r, warning = FALSE, message = FALSE}
+library(lme4)
+library(lmerTest)
+PlantDataHeight0 <- subset(PlantDataFull, Height>0)
+Plant.lmer <- lmer(Height ~ Species + Treatment + (1|Block), data=PlantDataHeight0)
+summary(Plant.lmer)
+```
+
+
+\textcolor{red}{\textbf{Question 9} What does the intercept of this model represent? (e.g. "the mean height for grasses of species X in treatment Y is N").}
+
+*The mean height for grasses of Schizachyrium scoparium in treatment Dry is 19.6630.*
+
+The estimates for each treatment category represent how that level differs from the reference level. R automatically chooses the first species and first treatment *alphabetically* to serve as the reference levels. But, we might not find that intuitive. In this case, we proably want the "none" treatment, which is the control, to be the reference level. Then we can compare the other two treatments to this reference level. Remember that the levels are "None", "Dry", "Wet".
+
+To re-order the levels for treatment, you can use the `factor` command on the column of interest (Treatment).
+As an example, here, I am re-arranging the iris species levels so that versicolor is first:
+```{r}
+iris$Species <- factor(iris$Species, levels = c("versicolor", "setosa", "california"))
+```
+
+\textcolor{red}{\textbf{Question 10} Re-level the factors in the plant height dataset, and then re-run the model.  How much shorter are plants in the dry treatment than in the control ("none") treatment? Is this significant? Remember to use the subsetted data where all the heights are greater than 0.}
+
+```{r}
+levels((PlantDataHeight0$Species))
+PlantDataHeight0$Species <- factor (PlantDataHeight0$Species, levels=c("Bouteloua gracilis", "Buchloe dactyloides", "Schizachyrium scoparium" ))
+Plant.lmer <- lmer(Height ~ Species + Treatment + (1|Block), data=PlantDataHeight0)
+summary(Plant.lmer)
+```
+
+*Plants in the dry treatment are 4.0696 units shorter than plants in the control treatment. This is not significant (p=0.069).*
+
+# BONUS: Using the gather function on germination data
+
+As an optional bonus exercise, you will plot germination events over time. As with soil moisture in the Block dataset, germination is spread across multiple columns (`GermVisit_1` to `GermVisit_4`). Using the `gather` function demonstrated in the "Tidying Data" section, create two new columns, one that gives the visit for an observation, and one that gives the germination status (1 or 0). Your data will go from having 144 rows to 576, since now there are four rows for each Tag_ID (one for each month's observation).
+
+Step 1: `gather` the data.
+
+*Important* Name the new column with the germination observation (0 or 1) `Germination`.
+```{r}
+library(tidyr)
+PlantDataFull <- gather(data=PlantDataFull, key=Visit, value=Status, GermVisit_1:GermVisit_4)
+```
+
+Step 2: `separate` the new Visit column so that you get a column with just the number of the visit.
+
+*Important* Name the new column with the visit number `Visit`.
+```{r}
+PlantDataFull <- separate(data=PlantDataFull, col=Visit, into = c("Delete","Visit"), sep = "_")
+head(PlantDataFull)
+PlantDataFull$Delete = NULL
+colnames(PlantDataFull)[colnames(PlantDataFull)=="Status"] <- "Germination"
+colnames(PlantDataFull)
+```
+
+If your command worked, try the following plot but first, change `Germination` to whatever column contains your 0s and 1s, change `Visit` to whatever column contains the number of visits
+
+```{r, message = FALSE, warning = FALSE}
+Germ <- aggregate(Germination~Visit*Species*Treatment, data = PlantDataFull, FUN = mean)
+# uncomment and run the install.packages command if you haven't installed ggplot2 yet
+# install.packages("ggplot2")
+library(ggplot2)
+ggplot(data = Germ,aes(x = Visit, y = Germination))+
+  geom_line(aes(color=Treatment, group = interaction(Species,Treatment)), size = 1)+
+  geom_point(aes(shape = Species, color = Treatment), size = 4)+
+  labs(x= "Visit", y = "Percent Germinated")
+```
+
+If your gathering worked, the plot should show that germination rate increases over the course of the experiment, with dry conditions associated with the lowest rate of germination. 

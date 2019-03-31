@@ -1,0 +1,304 @@
+---
+title: "Lab 5: The Normal Distribution"
+author: "Celeste Connell"
+date: "9/27/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# General information
+This lab is due October 3rd by 11:59 pm. You must upload your .rmd file and knitted html or PDF to the dropbox on D2L. This lab is worth 10 points. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+The goal of this lab is to get familiar working with the normal distribution, including calculating area under the curve and probability of observations. You will also learn to run one and two-sample t.tests and interpret their results.
+
+**\textcolor{blue} {This lab may be much easier to follow if you read through it in PDF format first. There are some symbols and formulae that are rendered in PDF format but not in R markdown.}**
+
+# The normal distribution
+The normal distribution is *the* classic distribution that all of statistics is built on. The default normal distribution has a mean of 0 and a standard deviation of 1. 
+
+There are a few built-in calculations in R that are commonly used to work with the normal distribution.
+
+1. `rnorm(n, mean, sd)` randomly generates *n* random numbers from a normal distribution with your specified *mean* and *standard deviation*.
+
+```{r}
+# generate 15 random numbers from a normal distribution
+# normal distribution has a mean of 6.7, sd of 2
+rnorm(n = 15, mean = 6.7, sd = 2)
+```
+
+2. `pnorm(q, mean, sd)` gives the area under the normal curve *to the left* of value *q*. In other words it gives the probability of a value less than or equal to q. To get the area under the curve to the *right* of *q*, you can specify `pnorm(q, mean, sd, lower.tail=FALSE)`.
+
+```{r}
+# probability of a value of 0 or LESS, from a distribution with mean of 1 and sd of 0.8
+pnorm(q = 0, mean = 1, sd = 0.8)
+# probability of a value of 0 or MORE, from the same distribution
+pnorm(q = 0, mean = 1, sd = 0.8, lower.tail = FALSE)
+```
+
+3. `qnorm(p, mean, sd)` gives the inverse of the *pnorm* function. In other words, it gives the value at which the cumulative distribution function is *p* for your specified mean and standard deviation. For example, if you input p = 0.025, you would find the critical value for a two-tailed test.
+
+```{r}
+# there is a 5% chance of observing a value of 6.7 or lower from this distribution
+qnorm(p = 0.05, mean = 10, sd = 2)
+# 95% of the distribution lies below 13.3
+qnorm(p = 0.95, mean = 10, sd = 2)
+```
+
+
+## Calculating probability from the normal curve
+The `pnorm` function calculates the probability of observing anything LESS than or equal to a given value of X. It is equivalent to finding the area underneath the curve to the left of X. The pnorm argument is constructed as : `pnorm (q = , mean =, sd = )`, where q is the value of X (often a test statistic or sample mean), and mean and sd are the parameters describing your normal distribution (mean = $\mu$ and sd = $\sigma$). To find the probability of observing anything GREATER THAN or equal to a given value of X, you should add the argument `lower.tail=FALSE`. Or, subtract the probability you find from 1.
+
+For example, on the standard normal curve, the probability of observing a value of 0 or less is:
+```{r}
+pnorm(q = 0, mean = 0, sd = 1)
+```
+
+This should make intuitive sense. The standard normal curve is centered on X = 0, so there is a 50% chance of observing a value <= 0. 
+
+For the following questions, it might be useful to sketch out the standard normal curve, so you can estimate if your answer corresponds to the correct tail of the distribution (e.g. does a given value of X seem very likely or not likely at all?)
+
+\textcolor{red}{\textbf{Question 1 (1 point): } Find the probability of observing a value less than or equal to -2.5, for the standard normal curve. Print out the value.}
+
+```{r}
+pnorm(q = -2.5, mean = 0, sd = 1)
+```
+
+
+
+\textcolor{red}{\textbf{Question 2 (1 point): } Find the probability of observing a value greater than or equal to 3, for the standard normal curve. Print out the value.}
+
+```{r}
+pnorm(q = 3, mean = 0, sd = 1, lower.tail = FALSE)
+```
+
+
+
+\textcolor{red}{\textbf{Question 3 (0.5 point): } What is the total area under any normal distribution? Why?}
+
+*1, or 100%. In a normal distribution, 50% of values lie below the mean, and 50% of values lie above the mean, thus 100% (or 1).*
+
+
+
+\textcolor{red}{\textbf{Question 4 (0.5 point): } Using one of the functions described above, sample 10 random numbers from a normal distribution with $\mu = 4$ and $\sigma = 1.5$. Graph a histogram of your sample. How close is your sample mean ($\bar{X}$) to the true parameter $\mu$? How close is your sample standard deviation (s) to the true parameter $\sigma$?}
+
+```{r}
+sample.n.10 <- rnorm(n = 10, mean = 4, sd = 1.5)
+hist(sample.n.10)
+mean(sample.n.10)
+sd(sample.n.10)
+```
+
+*I ran the random sample command a few times and got relatively similar values to the true mean (both higher and lower than mu). Same results seen with standard deviation. However, the spread looks pretty asymmetrical.*
+
+
+
+
+\textcolor{red}{\textbf{Question 5 (1 point): } Repeat what you did above, but this time sample 100 times and then 1,000 times from the distribution. What happens to your estimates of $\mu$ and $\sigma$ as sample size increases, and why?}
+
+```{r}
+sample.n.100 <- rnorm(n = 100, mean = 4, sd = 1.5)
+hist(sample.n.100)
+mean(sample.n.100)
+sd(sample.n.100)
+
+sample.n.1000 <- rnorm(n = 1000, mean = 4, sd = 1.5)
+hist(sample.n.1000)
+mean(sample.n.1000)
+sd(sample.n.1000)
+```
+
+*As sample size increases, sample mean stays about the same, but standard deviation gets closer to the true standard deviation. Thus suggests that increasing sample size doesn't have too much of an effect on accuracy, but it does make our sample more precise (standard deviation gets closer and closer to 1.5.)*
+
+
+
+\textcolor{red}{\textbf{Question 6 (0.5 point).} For a normal distribution with $\mu = 50$ and $\sigma = 0.5$, calculate the X value at which only $2.5$ percent of the area underneath the curve is to the RIGHT Confirm this using $pnorm()$. Take a look at the functions I've described at the beginning of the lab and pick the appropriate function. Sketch out the curve first to help you decide how to do this.}
+
+```{r}
+qnorm(p = 0.025, mean = 50, sd = 0.5, lower.tail = FALSE)
+
+
+pnorm(q=50.97998, mean = 50, sd=0.5, lower.tail = FALSE)
+
+```
+
+
+# The t-distribution
+
+The t-distribution is also a continuous probability distribution that is very closely related to the normal distribution. We use it to approximate a normal distribution when you have a small number of samples and the true population's standard deviation is unknown. The vast majority of scientific studies fall into this camp (small number of samples relative to the population, and an unknown true parameter).
+
+So, instead of comparing a test statistic to a *normal* distribution, we usually compare it to the *t-distribution*, which ends up being a little more conservative.
+
+There are analogous functions for working with the t-distribution, that are very similar to the functions described above for the normal distribution: 
+
+1) `rt(n, df)` for drawing n random samples from a t-distribution with degrees of freedom df
+
+(2) `pt(q, df)` for calculating the area under the curve to the left of x = q, for a t-distribution with degrees of freedom df
+
+(3) `qt(p, df)` for calculating the value of x for which the area under the curve to the left is equal to p.
+
+# T-tests: one-sampled
+
+We use the t-distribution to test whether an observed mean $(\bar{X})$ is different from the mean under the null hypothesis ($\mu_0$). For instance, from the lecture example, researchers were testing whether human body temperature was different than the supposed healthy body temperature of $\mu_0 = 98.6$. Thus their null hypothesis is: 
+
+$H_0$: mean(body temperature) is equal to 98.6
+
+$H_A$: mean(body temperature) is not equal to 98.6
+
+They collected data from a random sample of people. The data are:
+```{r}
+heat <- read.csv(url("http://www.zoology.ubc.ca/~schluter/WhitlockSchluter/wp-content/data/chapter11/chap11e3Temperature.csv"))
+str(heat)
+head(heat)
+```
+
+\textcolor{red}{\textbf{Question 7 (0.5 point): } Calculate the mean body temperature $(\bar{X})$ of their sample. Print the answer.}
+
+```{r}
+mean.humanbodytemp <- mean(heat$temperature)
+mean.humanbodytemp
+```
+
+
+The mean of the sample is not 98.6 degrees, exactly. But is it far off enough that we can reject the null hypothesis? What is the probability of observing our sample mean, or a mean more extreme, if the null is true $(\mu = 98.6)$? 
+
+If you've been paying attention to the first part of the lab, you might cleverly think that we could simply create a normal distribution with a mean of 98.6, and then calculate the area underneath the curve to the left of 98.524. That would give us the probability of observing our sample mean or one even lower, if the true population mean is 98.6 degrees. We could multiply by 2 to get our P-value.
+
+But, there's a big problem. We can't construct this null normal distribution because we don't know what the standard deviation of the population $(\sigma)$ is! Remember, to draw a normal distribution, we need to know the mean AND the standard deviation. So, instead of comparing our observed mean to a normal distribution, we need to compare our observed mean to a *t-distribution*.
+
+The t-distribution illustrates the mean of a sample taken from a normally distributed population. Its shape is determined by the degrees of freedom. *The degrees of freedom is the number of samples minus 1*. The t-distribution is *not* described by a population standard deviation, which is great, because we don't know it! 
+
+Let's take a look at the t-distribution using the correct degrees of freedom for the temperature dataset:
+
+```{r}
+plot(seq(-5,5, by=.01), dt(seq(-5,5, by=.01), 
+    df=length(heat$temperature)-1), type="l", 
+     ylab = "density", xlab = "T value")
+```
+
+If we want to compare our mean to the t-distribution, we run into some trouble. Our sample mean is nowhere near the curve, because the t-distribution is centered around 0, not 98.6. In order to compare our mean to the t-distribution, we need to *standardize* our sample mean. The standardized sample mean is the test statistic for the t-test. To get the *test statistic (t)*, we use the formula below (Note that the formula above will display nicely in the knitted PDF but is hard to read in markdown):
+
+$$t = \frac{\bar{Y} - \mu_0}{SE_{\bar{Y}}}$$
+
+In other words, we subtract the null hypothesis mean from our observed sample mean, then divide by the standard error of our sample. Your book uses $\bar{Y}$ to denote a sample mean; this is equivalent to $\bar{X}$ which is also sometimes used to denote a sample mean. 
+
+\textcolor{red}{\textbf{Question 8 (1 point):} Calculate the t-statistic for your observed data and report it below. It may be useful to define variables like n, df, SE first, before doing the actual calculation, to avoid having a terribly messy fraction. *Do not use raw numbers; use functions in R to calculate things like n, df, etc.* If you are not sure where to begin, check out the example in the book, on p. 310. Comment your code so I can understand your approach.}
+
+```{r}
+n.bodytemp <- nrow(heat)
+standarderror.bodytemp <- sd(heat$temperature)/sqrt(n.bodytemp)
+standarderror.bodytemp
+t.stat <- (mean.humanbodytemp - 98.6) / standarderror.bodytemp
+t.stat
+```
+
+
+*t-statistic: -0.5606452* 
+
+\textcolor{red}{\textbf{Question 9 (0.5 point):} Calculate the probability of observing a test statistic as or more extreme as yours, using the function `pt`. It may be helpful to follow along in the book or lecture slides. Report the probability.}
+
+```{r}
+df.bodytemp <- n.bodytemp - 1
+pt(t.stat, df.bodytemp) *2 #start here
+
+```
+
+*.58, or 58%*
+
+\textcolor{red}{\textbf{Question 10 (1 point):} What does the probability you calculated tell you about the null hypothesis that the average body temperature is 98.6?}
+
+*There is a 58% chance that our observed mean would match a sample mean pulled from the null distribution.*
+
+
+You just ran a one-sample T-test by hand. You calculated a test statistic from your observed mean (t), and compared it to a null t-duistribution to get a P-value. By now, this theme of hypothesis testing should seem familiar:
+
+(1) define null and alternative hypotheses
+
+(2) generate a null distribution for a test statistic
+
+(3) calculate a test statistic from the observed data
+
+(4) compare your test statistic to the null distribution to get a P-value
+
+Another way to think of the t-distribution is that it is essentially a sampling distribution for the t-statistics we might get if we took many different samples with a certain degree of freedom, and if the null hypothesis were true. Thus, some t values might be pretty large or pretty small (when the sample mean is far from the null mean), but if the null hypothesis is true, those events should be rare.
+
+#Example 1: Running one and two-sample t-tests using R's functions
+
+There is a function in R that does steps 2-4 of the t-test automatically. This is the `t.test()` function. There are many different ways to customize the function to run the specific test you need, as well as add different types of corrections. Check out the ?t.test help page for information. 
+
+## One-sample test
+The simplest version of a t-test is the one-sample, for comparing the mean of a sample to a null mean. One sample t-tests are used to answer the question: is the true population mean $\mu$ equal to some hypothesized mean $\mu_0$? This is what you just ran, by hand. To run this in R, you need to give the function two arguments. The argument `x =` is a vector containing your sample measurements, and the second argument `mu = ` gives your expected mean under the null hypothesis. 
+
+For instance: `t.test( x = mydata$height, mu = 155)` would test whether the true population mean is equal to 155, given a sample dataset called mydata$height.
+
+For the next few problems, let's work with the Black Cherry tree dataset, from a few labs ago. This gives the measurements of cherry trees that were gathered for timber.
+
+```{r}
+head(trees)
+hist(trees$Girth)
+```
+
+The forester wants to know if the stand of cherry trees she sampled from (the true population) was healthy before the timber harvest. Mature cherry trees should have a girth of around 12.5 inches. So, she'd like to use the sample of trees that she harvested to estimate the mean girth of all the cherry trees in the stand.
+
+\textcolor{red}{\textbf{Question 11 (0.5 point):} Use the t.test function to test the hypothesis that mean cherry tree girth from the stand was 12.5 inches. Interpret the output.}
+
+```{r}
+t.test( x = trees$Girth, mu = 12.5) #would test whether the true population mean is equal to 155, given a sample dataset called mydata$height.
+```
+
+*This t-test function gives us our t-value (1.3278), our degrees of freedom (30), and Our p-value (0.1943). This means we retain the null, and that the true mean IS equal to 12.5 inches.*
+
+
+## Two-sample test
+Lastly, to compare the means of two groups (a two-sample t-test), you must give the t.test two vectors to compare. The two sample sets do not need to be of equal length. The two-sample t-test tests the null hypothesis that there is *no* difference in mean between the two groups. 
+
+```{r}
+myvalues <- c(44, 46, 29, 72, 90)
+myvalues2 <- c(34, 32, 30, 31, 32, 30, 19, 45)
+t.test(x = myvalues, y = myvalues2)
+```
+
+Some experiments used paired measurements; that is, they apply both treatments to every sampling unit. In these experimental designs, data are *paired*. For instance, a study might measure patients' blood pressure before and after receiving a medication. In this case, each patient is in both the "before" experimental group and the "after" experimental group, and the data are paired. To run a paired t-test, you add the argument `paired = TRUE` to the `t.test` argument.
+
+```{r}
+before <- c(150, 144, 128, 159, 141, 132, 129)
+after <- c(148, 142, 128, 165, 138, 128, 130)
+t.test( x = before, y = after, paired = TRUE)
+```
+
+We'll investigate paired t-tests in more detail in next week's lab. 
+
+#Review/conceptual questions
+\textcolor{red}{\textbf{Question 12 (1 point):} What is the difference between bias and sampling error? Give an example of each.}
+
+*Sampling bias: A systematic discrepancy between the estimates we obtain if we sampled a population again and again, and the true population characteristic. In other words, there is something wrong with the choice of the sample. An example of this would be if we're interested in STD rates in America, but we only sample college students.*
+*Sampling error: Just by chance, even if your sample is taken randomly, it will almost never match the population parameter. Sampling error decreases with an increased n. For example, if you're interested in depression rates among CU students, and you take a true random sample of 50 students, your results won't be exactly representative of the student body at large.*
+
+\textcolor{red}{\textbf{Question 13 (1 point):.} Alaska is the state with the lowest gender ratio of women to men. 48 percent of Alaskans are female. The freshman class at University of Alaska has 623 males and 825 females. Is the proportion of males and females different at U of A relative to the rest of the state? Use one of the statistical tests we have learned so far. Report the P-value and test statistic, and interpret the results.}
+
+```{r}
+825+623
+expected.females <- .48
+binom.test(825, n = 1448, p = expected.females, alternative = "two.sided")
+
+
+
+
+#also, coudld've done goodness of fit
+obs.counts <- c(623,825)
+null.probs <- c(.52, .48)
+chisq.test(x=obs.counts, p=null.probs)
+......
+
+```
+
+*P-value: 8.563e-12*
+*Test statistic: 0.57*
+*Our p-value is much less than 0.05, so we reject the null. The proportion of males and females at the University of Alaska is different relative to the rest of the state (there are more females at U of A than expected compared to the rest of the state.)*
+
+
+
+

@@ -1,0 +1,160 @@
+---
+title: 'Lab 8: Think Fast'
+author: "Celeste Connell"
+date: "10/25/2018"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# General information
+This lab is due October 31st by 11:59 pm. This lab is worth 10 points. You must upload your .rmd file and knitted file to the dropbox on D2L. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+The goal of this lab is to design an experiment and collect data to test what factors influence reaction times. You will be collecting data during lab and investigating your hypotheses using the statistical tests you have used in the past. This lab should help prepare you for your independent project, in which you will be choosing appropriate statistical analyses on your own. 
+
+# Experimental design
+In class, you will decide what variables may be associated with increased or decreased reaction time. Come up with 2 continuous variables and 2 categorical variables as a class. For instance, you might decide that whether or not the person ate breakfast (categorical) and the person's age (continuous) will influence reaction time. 
+
+# Data Collection
+Each person will use the reaction timer at : https://www.humanbenchmark.com/tests/reactiontime. Conduct 5 trial per person and record the average (the website will calculate this for you). Use the last 4 digits of your phone number as your subject ID. Be careful not to delete anyone's data on the google doc. Enter in what variables pertain to you next to your reaction time, using the google doc posted on D2L.
+
+# Notes on assumptions
+Since we are collecting brand-new data today, it's possible we will collect data that violate some assumptions of statistical tests. For today, and for the purposes of completing this lab, assume that the tests will be robust to these violations. Run them, but *if you notice serious errors with the data, discuss these in your interpretations*.
+
+For your own independent project, don't take this same approach! Rigorously examine whether assumptions are met before proceeding with a given statistical test! 
+
+# Example two-way ANOVA
+Before you analyze the class' dataset, explore the two-way ANOVA, using a built-in dataset in R, called `crabs`. The crabs data frame has 200 rows and 8 columns, describing 5 morphological measurements on 50 crabs each of two species and both sexes. The researchers want to know if sexual dimorphism depends on species.
+
+Let's use the response variable "FL" which is the frontal lobe size in mm. We will test (1) whether sex affects lobe size, (2) whether species (`sp`) affects lobe size and (3) whether there is an interaction between the two.
+
+```{r}
+crabdat <- read.csv("https://raw.githubusercontent.com/vincentarelbundock/Rdatasets/master/csv/MASS/crabs.csv")
+head(crabdat)
+# run the ANOVA
+crab.2.way.anova <- aov(FL ~ sp * sex, data = crabdat)
+# explore output
+summary(crab.2.way.anova)
+# run post-hoc tests to understand group comparisons
+TukeyHSD(crab.2.way.anova)
+```
+
+The output of this test indicates that frontal lobe size significantly differs between species, and that differences between sexes depend on species. If we look at the plot below we see that there is no difference between males and females in the "O" species, but there is a difference in the "B" species. This is why the interaction term is significant (P = 0.004) but the fixed effect of sex on its own is not. You could run a one-way ANOVA confirm that sex, on its own, does not influence frontal lobe size.
+
+Feel free to explore the code below for making an interaction plot. You may be interested in making a similar plot for your independent project, but *it will not be tested in this lab assignment*.
+
+```{r, echo=FALSE}
+stderr <- function(x) sd(x)/sqrt(length(x)) #creates a function to calculate std error
+means <- aggregate(FL ~ sp*sex, data = crabdat, FUN=mean) # calculates mean of each sex * species category
+sderr <- aggregate(FL ~ sp*sex, data = crabdat, FUN= stderr) # calculates standard error of each sex*species category
+
+# set a default colors to use for plotting
+palette(c("firebrick", "goldenrod"))
+{interaction.plot(crabdat$sp, crabdat$sex, response = predict(crab.2.way.anova), 
+	 trace.label = "Sex", las = 1, ylab = "Frontal Lobe Length", 
+	 xlab = "species", ylim = c(12,18), lwd = 1.5, col = 1:2)
+# plot the means for females
+points(FL ~ sp, data = subset(means, sex == "F"), pch = 16, col = "firebrick", cex = 1.5)
+# plot the means for males
+points(FL ~ sp, data = subset(means, sex == "M"), pch = 16, col = "goldenrod", cex = 1.5)
+# plot the error bars (2 x SE) for females first (the 1st and 2nd entries in `means`)
+segments( x0 = c(1,2), x1 =c(1,2),
+          y0 = means$FL[1:2] - 2*sderr$FL[1:2], 
+          y1 = means$FL[1:2] + 2* sderr$FL[1:2],
+          col ="firebrick", lwd = 2)
+# plot the error bars for males next (the 3rd and 4th entries in `means`)
+segments( x0 = c(1,2), x1 =c(1,2),
+          y0 = means$FL[3:4] - 2*sderr$FL[3:4], 
+          y1 = means$FL[3:4] + 2*sderr$FL[3:4],
+          col ="goldenrod", lwd = 2)
+}
+```
+
+
+# Analyzing the class data
+Start by reading in the data. Take a look at the object in R using the str() or head() functions to make sure the data look correct. 
+```{r}
+ReactionTimeData <- read.csv("ReactionTime.csv")
+str(ReactionTimeData)
+levels(ReactionTimeData$Coffee4hrs) <- c("N", "Y", "Y")
+levels(ReactionTimeData$Coffee4hrs)
+levels(ReactionTimeData$CorrVision) <- c("N", "N", "Y")
+levels(ReactionTimeData$CorrVision)
+```
+
+
+## Analysis 1
+
+In this analysis, you will use a two-way ANOVA to determine whether *both* categorical variables interactively influence reaction time. See the Crab example above for how to run this test.
+
+\textcolor{red}{\textbf{Question 1 (1 point)} Before running the test, what are the null hypotheses for your two-way ANOVA? Be specific, i.e. instead of writing "means of the two groups", you'd want to write "mean reaction times of males vs. females"} 
+
+*I'll analyze corrective vision and coffee in the last 4 hours.*
+*We'll have 3 null hypotheses: 1) Coffee consumption in the last 4 hours has no effect on reacion time; 2) Whether or not one wears corrective vision has no effect on reaction time; 3) There is no interaction between coffee consumption and corrective vision.*
+
+
+\textcolor{red}{\textbf{Question 2 (2 point)} Run a two-way ANOVA on your data. Report the test statistic and P-value for *each* hypothesis.}
+
+```{r}
+coffee.corrective.anova <- aov(ReactionTime ~ Coffee4hrs * CorrVision, data = ReactionTimeData)
+summary(coffee.corrective.anova)
+TukeyHSD(coffee.corrective.anova)
+```
+
+*1) Coffee consumption in the last 4 hours has no effect on reacion time -- F value: 0.305; P-value 0.588*
+*2) Whether or not one wears corrective vision has no effect on reaction time -- F value: 0.410; p-value: 0.530*
+*3) There is no interaction between coffee consumption and corrective vision -- F value: 1.182; p-value: 0.292*
+
+If your ANOVA yielded significant results, you will likely have to visualize the data or use follow-up tests to help you interpret what the results mean. Tukey tests, plots, and aggregated means are all useful tools (see above example and powerpoint). You can always plot the means yourself on scratch paper if you are having trouble synthesizing all of the output! 
+
+\textcolor{red}{\textbf{Question 3 (2 point)} Interpret the output from your 2-way ANOVA. See Crab example in powerpoint for a thorough response.}
+
+```{r}
+# your optional R code here
+```
+
+*There was no fixed effect of coffee consumption on reaction time (F=0.305, P=0.588) no fixed effect of corrective vision on reaction time (F=0.410, P=0.530), and no significant interaction between coffee consumption and corrective vision on reaction time (F=1.182, P=0.292).*
+ 
+## Analysis 2
+Next, you will fit a linear model to explore the relationship between one of the continuous predictor variables and the response variable reaction time.
+
+\textcolor{red}{\textbf{Question 4 (1 point)} Fit a linear model between one of the continuous variables and reaction time. Report the test statistic, slope with standard error, and P-value.}
+
+```{r}
+ReactionTimeRegression <- lm(ReactionTime ~ Sleep, data = ReactionTimeData)
+coef(ReactionTimeRegression)
+summary(ReactionTimeRegression)
+```
+
+*I analyzed the relationship between hours of sleep and reaction time. F=2.832; slope=-16.006 with a standard error of 9.512; P=0.1088.* 
+
+
+\textcolor{red}{\textbf{Question 5 (1 point)} (a) What was the null hypothesis for the linear regression model? (b) What does the P-value you found represent (e.g. "the probability of...")?}
+
+*Null hypothesis: The slope of the relationship between a person's hours of sleep last night and their reaction time is zero. The p-value represents the probability of obtaining our calculated estimate of the slope if the null were true.*
+
+
+\textcolor{red}{\textbf{Question 6 (1 point)} What does the slope tell you about the relationship between your variables? (e.g. "for every 1 unit increase in X, Y increases by..."). Overall, how confident are you in the results of your analysis?}
+
+*For every 1 unit increase in hours in sleep, reaction time increases by -16.006 (or decreases by 16.006). I'm not very confident in the results of this analysis, since our standard error is relatively high, our p-value is insignificant, and our sample size was small.*
+
+
+\textcolor{red}{\textbf{Question 7 (2 point)} Plot the relationship between the two variables. If the linear regression was significant, add a best fit line to the plot. See example code on D2L for scatterplots if you are not sure where to begin. You do not need to add uncertainty estimates to your best fit line.}
+
+```{r}
+{plot(ReactionTime~Sleep, data = ReactionTimeData, 
+     pch = 16, col = "darkorchid3", main = "Hours of sleep vs. reaction time")
+}
+```
+
+Now, suppose we wanted to test whether yoga improves reaction time. We take the 3 students with the slowest reaction times and have them do 15 minutes of yoga. Then we re-test their reaction times.
+
+\textcolor{red}{\textbf{BONUS (1 point)} What would you expect to happen to their reaction times and why? What is the issue with the proposed approach?}
+
+*Their reaction times would likely speed up, due to regression toward the mean. This means that individuals who performed the poorest are likely going to get a little bit better, an individuals who performed the best are likely going to get a little bit worse. The issue with this proposed approach is that there is no control group.*
+

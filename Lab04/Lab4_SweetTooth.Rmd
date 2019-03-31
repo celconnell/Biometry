@@ -1,0 +1,313 @@
+---
+title: "Lab 4: Sweet Tooth"
+author: "Celeste Connell"
+date: "9/20/2018"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+subtitle: Chi-squared tests of proportions
+---
+```{r setup, include=FALSE}
+
+```
+
+# General information
+This lab is due September 26 by 11:59 pm. **Upload the R Markdown document and the knitted pdf, html, or .doc to D2L.** The lab is worth 10 points. You are welcome and encouraged to talk with classmates and ask for help. However, each student should turn in their own lab assignment and all answers, including all code, needs to be solely your own.
+
+# Objective
+In this lab you will learn how to implement chi-squared and goodness-of-fit tests using data you have generated in class. You will also get further practice in identifying which statistical tests are appropriate, as well as plotting data.
+
+# Example 1: $\chi^2$ goodness-of-fit tests
+The $\chi^2$ goodness-of-fit test is a specific type of goodness-of-fit test that compares a distribution of observed counts to a distribution of expected counts under some probability model. The data in this example come from example 8.1 in the book. This study examined whether babies were equally likely to be born on all 7 days of the week. (As you run through this example, think about which experiment from today is similar in structure to this experiment, and make sure you input and run your data in the same way as this example does). 
+
+##Step 1: enter in the observed data and null proportions
+The first step is to create a vector of observed counts. These observations come from the book example and are the total number of babies born on each day of the week. The observed data should always be formatted as *counts* rather than proportions.
+
+```{r}
+birthDayObserved <- c(33, 41, 63, 63, 47, 56, 47) # observed counts
+```
+
+Next, I'll create a vector of expected *probabilities* under the null hypothesis. We need a null proportion (or an expected proportion) for each category. In this case we have 7 categories since there are 7 days of the week. The null hypothesis in is that babies are equally likely to be born on any day of the week. Therefore our null hypothesis is that 1/7 of babies are born on Monday, 1/7 on Tuesday, and so on. In this case our theoretical/null distribution is a uniform distribution, but as the Hockey example from class shows, it does not always need to be a uniform distribution.
+
+ If our distribution was not a uniform distribution (say, we expected more babies born on the weekends for some reason) we'd need to give the null proportion for each category, making sure they sum to one. So, for example: `Null.proportions <- c(0.2, 0.15, 0.1, 0.1, 0.1, 0.15, 0.2)`.
+ 
+```{r}
+Null.Proportions <- rep (1/7, 7)
+Null.Proportions
+sum(Null.Proportions)
+```
+
+Remember that your null proportions/probabilities need to be between zero and one, and the sum of all of the proportions should equal 1.
+
+It is crucial that the order of categories (e.g. Monday, Tuesday, Wednesday...) in the Observed and Null datasets is the same. When you run your own data, make sure this is the case.
+
+
+## Step 2: plot the data (bar plot)
+A good rule of thumb is to visualize your data in a plot before running a statistical analysis. Bar charts are a good way to display proportional data when you have > 2 categories, as we do in this case. Here, I run through an example that plots observed and expected frequencies side-by-side.
+
+First, you need to calculate the expected *counts* if the null hypothesis were true. To get expected counts (`birthDayExpected`), multiply the null proportion for each category by the total number of observations, summed across all categories (350 babies). In this case, each category has an equal expected proportion (1/7), so our expected counts are all the same: 350 * (1/7) = 50.
+
+```{r}
+birthDayExpected <- Null.Proportions * sum(birthDayObserved)
+birthDayExpected 
+```
+
+
+To make plotting easier, we'll create a table of our observed and expected observations, using the command 'rbind' which you learned in Lab 1:
+
+```{r}
+# combine data; row 1 is observed, row 2 is expected
+birthData <- rbind(birthDayObserved, birthDayExpected) 
+# give the table column names
+colnames(birthData)<- c("Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+birthData
+```
+
+Pay close attention to the order in which you bind your data. In this case, I used `rbind()` which combines vectors as separate rows, rather than separate columns. Row 1 is observed and row 2 is expected, and each row goes in order of days of the week.
+
+Next, use the function `barplot` to plot data. Bar plots are useful ways to visualize frequency data. 
+```{r}
+colors<-c("darkorange", "darkmagenta")
+barplot(height = birthData, beside=TRUE, cex.names = 0.8, ylim = c(0,80),
+        legend = c("Observed", "Expected"), col=colors)
+```
+
+R will first plot the first row of data (in this case Observed), then will plot the second row of data (Expected), so in this case, observed counts will be plotted in dark orange and expected counts in dark magenta. I've made sure that my legend has the names in the right order as well.
+
+The command `beside = TRUE` tells R that the data should be grouped; the first element of each vector (Sunday counts) go next to each other, then the second elements, and so on. R  plots the bars in the order they appear in the birthData table.
+
+##Step 3: running the statistical test
+
+The goodness-of-fit test calculates a test statistic, $\chi^2$, which measures the difference between observed and expected counts. The larger the difference, the higher the test statistic, and the lower the P-value. 
+
+To run a goodness-of-fit test, we use the function `chisq.test`. This function will run goodness-of-fit AND contingency tests.
+
+For the goodness-of-fit test, we need to fill out a few arguments. The `x = ` argument gives your vector of observed counts. The `p = ` argument gives a vector of null *probabilities* (not expected counts), so be careful there! There need to be the same number of entries in the `p =` vector as there are in the `x = ` vector, and the number of elements must be equal to the number of categories (in this example, 7).
+
+```{r}
+Null.Proportions <- rep (1/7, 7) 
+chisq.test(x = birthDayObserved, p = Null.Proportions)
+birthDayObserved
+Null.Proportions
+```
+
+The output of this tells us that there is a 1.8% chance of observing our birth distribution OR birth distributions even further from the null, if the null hypothesis is true. Since it is < 0.05, we reject the null hypothesis. Babies do NOT have an equal chance of being born on each day of the week. Our test statistic is 15.24. 
+
+# Example 2: $\chi^2$ contingency tests
+
+$\chi^2$ contingency tests are a sub-class of goodness-of-fit tests. Instead of comparing an observed distribution to a null or theoretical probability distribution, we compare two or more distributions which differ in some factor level. Here we are asking whether the sample distributions are different from one another, rather than whether they are different from some theoretical distribution. Another way of thinking about this is that $\chi^2$ contingency tests for an association between two or more categorical variables. If your response variable is counts in different categories, and your explanatory variable is categorical, you will likely be running a contingency test. In contingency tests, there may be >= 2 categories in both the response and explanatory variables. Let's walk through an example. 
+
+From example 9.4 in the book, researchers studied the rates of predation of fish with differing infection levels. Researchers wanted to know if fish were more likely to be eaten by birds if they were infected by trematodes. 
+
+Fish in this study were grouped into 3 categories, uninfected, lightly infected, and highly infected (explanatory variable). Researchers marked each fish's fate: whether that fish was eaten by birds or not.
+
+Therefore, the researchers are interested in whether or not their response variable (fish fate) is independent of explanatory variable (infection). If the two variables are independent (the null hypothesis), fish are equally likely to be eaten no matter what their infection status is. If the two variables are not independent (the alternative hypothesis), fish in each of the infection groups do NOT have equal chances of being selected. 
+
+## Step 1: Read in the data
+
+Read in the data and take a look at the structure. Note that this data gives the response of each individual fit, rather than counts (or frequencies) of each group.
+```{r}
+fish <- read.csv(url("http://www.zoology.ubc.ca/~schluter/WhitlockSchluter/wp-content/data/chapter09/chap09e4WormGetsBird.csv"))
+head(fish)
+```
+
+## Step 2: Create a summary table for plotting
+To plot the  $\chi^2$ data, we need a contingency table, which gives the frequencies or counts in each combination of categories. Since we have 3 explanatory variable categories (uninfected, lightly, highly) and 2 response variable categories (eaten or not eaten), we want a table with 6 cells. So, we need to sum the observations in each category. You could do this by hand, or you could use a handy function:
+
+```{r}
+fishTable <- table(fish$infection, fish$fate)
+addmargins(fishTable)
+```
+
+The `table` function sums all of the observations for a specific combination of fate and infection, and gives row and column totals. The first argument you give the `table()` function will be your row names, the second will be your column names. In this case, the explanatory categories are rows, and response categories are columns. However, contingency tables can be made in the opposite format; with explanatory categories as columns. It doesn't change the math! The `addmargins` function is a useful function that adds row and column sums to a given table. 
+
+Note that this format of data is very different from the raw data!
+
+## Step 3: Plot the data (mosaic plot)
+By now you've seen mosaic plots. They are useful ways of visualizing data where you are looking at categorical response variables and categorical explanatory variables. For more information on mosaic plots, see Lecture 4 on plotting.
+```{r}
+mosaicplot( fishTable, col = c("firebrick", "pink"), cex.axis = 1, 
+            sub = "Infection level", ylab = "Relative frequency", 
+            main = "Infection status and fish fate")
+```
+
+## Step 4: Run the contingency test
+
+Since contingency tests are simply one type of goodness-of-fit test and also use the $\chi^2$ test statistic, we use the same function to run contingency tests:
+
+```{r}
+FishChiTest <- chisq.test(fish$fate, fish$infection, correct = FALSE)
+FishChiTest
+```
+
+*Important:* the arguments are different than they were in the first example (babies). Instead of a vector of expected probabilities, we give the `chisq.test` the names of the two categorical variables for which we are testing independence. Remember, we want to know if fish fate and fish infection status are independent. An important detail to note is that we are running this test using the two columns from our original dataframe, `fish` instead of using the contingency table `fishTable`. We've also saved the results of our contingency test as a variable, `FishChiTest`. This is not necessary but allows us to look up the results of our test at a later date. 
+
+In this case, we have an extremely low P-value. 7.124 e-16 is scientific notation and is equivalent to 7.124 x 10^-16. Our test statistic is large: 69.76. So, there is an extremely low chance of observing as big of a difference in fish fate (or even bigger differences) between infection categories if there really were no link between infection level and fish fate. So, we can reject the null hypothesis. Our data indicate there is a link between infection level and chance of bird predation. In other words, fish fate *depends* on infection level. We don't know without further testing which level of infection differs; it may be that only one group is different or that all three are different from one another.
+
+The `chisq.test` function calculates expected frequencies in order to compute the test statistic. If you want to see these expected frequencies you can add $expected to the name of your saved statistical test. This is why it's nice to save the test as a variable in R.
+
+```{r}
+FishChiTest$expected
+```
+
+Great! You now know how to run a $\chi^2$ goodness-of-fit test, as well as a more specific type of goodness-of-fit test, called a $\chi^2$ contingency test using R's built-in functions. And recall, you have run the binomial test in R last week. That means you are prepared to analyze our class data!
+
+# Class Data
+Data from our class are posted to D2L. Each experiment uses a separate .csv file. To refresh your memory, here are the 3 experiments:
+
+1) Is Mars' claim about M \\& M's color distribution true? 
+
+Experiment: you counted the number of M \& Ms of each color in a sample bag. Test whether your sample fit the distribution given by Mars (see handout).
+
+Data: count of each color in your group's sample. You will enter this data yourself as a vector.
+
+2) Are Jelly Belly flavors really that different?
+
+Experiment: each student tried one Jelly bean and had to guess which of 6 flavors it was. We wanted to know if students can identify flavors better than chance.
+
+Data: the guesses (correct = 1; incorrect = 0) of each student in the class is in the file "JellyBelly". Download the file as a .csv
+
+3) Can soda drinkers tell Coke and Pepsi apart?
+
+Experiment: each student tries a unknown soda flavors and guesses which one is Coca-Cola. Their guess is recorded as correct or incorrect. The class is split up into 3 categories: frequent, occasional, and non-soda drinkers. We want to know whether the proportion of correct guesses differs among these three categories. In other words: are soda drinkers better at distinguishing the correct brand?
+
+Data: the total number of correct and incorrect guesses of each group are in the file "CokevsPepsi". Download the file as a .csv
+
+
+# Experiment 1: Mars Candy's M\&M Claims.
+Use your data to test whether Mars Candy is being honest about the color distribution of M \& Ms. If you don't remember this experiment, see the summaries at the beginning of this lab, or the background document on D2L.
+
+\textcolor{red}{\textbf{Question 1: }What is the null and alternative hypothesis being tested here?}
+
+*Null hypothesis: The colors of M\&Ms in M\&M packages fit the distribution claimed by Mars.*
+
+*Alternative hypothesis: The colors of M\&Ms in M\&M packages do not fit the distribution claimed by Mars.*
+
+
+\textcolor{red}{\textbf{Question 2: }Is your sample a random sample of all plain M\&Ms? Why or why not?}
+
+*Our sample is not a random sample because they were obtained from one bag from one grocery store. It would be more random if we obtained multiple bags from various grocery stores.*
+
+\textcolor{red}{\textbf{Question 3: } Run the appropriate statistical test, using R's built-in functions as demonstrated above. You will need to include code to input your data using a vector. Report the P-value and test statistic.} 
+
+```{r}
+#set up table
+M.and.M.Observed <- c(2,3,1,2,8,4) #brown, yellow, red, orange, green, blue
+
+M.and.M.Null.Proportions <- c(.2,.2,.2,.1,.1,.2)
+M.and.M.Null.Proportions
+sum(M.and.M.Null.Proportions)
+
+M.and.M.Expected <- M.and.M.Null.Proportions * sum(M.and.M.Observed)
+M.and.M.Expected
+
+M.and.M.Data <- rbind(M.and.M.Observed, M.and.M.Expected) 
+colnames(M.and.M.Data)<- c("brown", "yellow", "red", "orange", "green", "blue")
+M.and.M.Data
+
+#run x^2 goodness-of-fit test
+chisq.test(x = M.and.M.Observed, p = M.and.M.Null.Proportions)
+?chisq.test
+
+#if we were to calculate it...
+chisq_values <- ((M.and.M.Observed - M.and.M.Expected)^2)/(M.and.M.Expected)
+sum(chisq_values)
+qchisq(0.95, 5)
+
+# We get that our x^2 value is 21.5, which matches the results from chisq.test.
+```
+
+*P-Value: 0.0006515.* 
+*Test-statistic: 21.5.*
+
+\textcolor{red}{\textbf{Question 4: } Interpret the results of your statistical test and explain what it reveals about the initial question.} 
+
+*Our p-value is 0.0006515, meaning that there is a significant difference between the observed proportion in our sample and the expected proportion based on the distribution claimed by Mars. We reject the null and have reason to believe that The colors of M\&Ms in M\&M packages do not fit the distribution claimed by Mars.*
+
+
+# Experiment 2: Jelly Belly Taste Test
+Use the class' data to see if students can discriminate between Jelly Belly flavors better than chance. If you don't remember this experiment, see the summaries at the beginning of this lab, or the background document on D2L.
+
+\textcolor{red}{\textbf{Question 5: } What is the null and alternative hypothesis being tested here?}
+
+*Null hypothesis: The probability of guessing the correct jellybelly flavor is 1/6.*
+*Alternative hypothesis: The probability of guessing the correct jellybelly flavor is not 1/6.*
+
+
+\textcolor{red}{\textbf{Question 6: } Run the appropriate statistical test. Include code for reading in the class' data from a csv. Hint: there are two ways to approach this data; one will give an exact result, and the other an approximation. Either approach is fine here. Report the p-value and test statistic.}
+
+```{r}
+# running a binomial test
+jellybelly <- read.csv("JellyBelly - sheet1.csv")
+nrow(jellybelly) # our n value
+sum(jellybelly$Correct) # our number of successes
+1/6 #our probability
+binom.test(9, n = 24, p = 0.1666667)
+
+
+```
+
+*P-value:0.01176*
+*Test statistic: 9/24 = 0.375*
+
+
+\textcolor{red}{\textbf{Question 7:} Interpret the results of your statistical test and explain what it reveals about the initial question.}
+
+*Since our p-value is less than 0.05, we can reject the null hypothesis. Thus, the probability of guessing the correct jellybelly flavor is different than the probability of getting the right flavor due to random chance.*
+
+
+# Experiment 3: Pepsi vs. Coke 
+Use the class' data to evaluate whether taste ability differs between frequent, occasional, and non-soda-drinkers.
+If you don't remember this experiment, see the summaries at the beginning of this lab, or the background document on D2L.
+
+\textcolor{red}{\textbf{Question 8: } What is the null and alternative hypothesis being tested here?}
+
+*Null hypothesis: The probability of guessing the correct soda is independent of whether the guesser often drinks soda or never drinks soda.*
+*Alternative hypothesis: The probability of guessing the correct soda depends on whether the guesser often drinks soda or never drinks soda.*
+
+\textcolor{red}{\textbf{Question 9: } Run the appropriate statistical test. Include code for reading in the class' data from a csv. Report the p-value and test statistic.}
+
+```{r}
+sodadata <- read.csv("CokevPepsi - Sheet1.csv")
+levels(sodadata$SodaFrequency)[levels(sodadata$SodaFrequency)=="Frequent"] <- "Often" #This changes the name of the single "Frequent" factor into "Often"
+sodadata
+sodatable <- table(sodadata$SodaFrequency, sodadata$Correct)
+addmargins(sodatable)
+
+mosaicplot( sodatable, col = c("firebrick", "pink"), cex.axis = 1, 
+            sub = "How often one drinks soda", ylab = "Correct guess", 
+            main = "Soda drinking frequency vs. correct guesses")
+
+SodaChiTest <- chisq.test(sodadata$SodaFrequency, sodadata$Correct, correct = FALSE)
+SodaChiTest
+
+#or, we can run the analysis on our table, which yields the same results.
+chisq.test(sodatable, correct = FALSE)
+
+```
+*P-value: 0.04489*
+*Test statistic: 4.0229*
+
+
+\textcolor{red}{\textbf{Question 10:} Interpret the results of your statistical test and explain what it reveals about the initial question.}
+
+*Since our p-value is less than 0.05, we reject the null. The probability of guessing the correct soda does depends on whether the guesser often drinks soda or never drinks soda. Interestingly, those who reported that they never drink soda had more correct guesses than those who reported that they often drink soda (according to the mosaic plot).*
+
+
+# Plotting data
+\textcolor{red}{\textbf{Question 11: } Choose one of the experiments above, and create a plot to illustrate the data. Think about what type of plot (mosaic or paired bar) is appropriate and follow closely that example above, substituting in your data for the example data.}
+
+Note: The default plot function will likely not produce a perfect plot. You will need to modify things like: labels, font size, colors, etc to make your plot more readable. This requires adding extra arguments to the plot command (demonstrated in Lecture 4 and in above examples). Your plot will be graded on ease of interpretation (e.g. small fonts, overlapping labels, axes with dollar signs in the titles, will not receive full credit.)
+
+```{r}
+mosaicplot( sodatable, col = c("firebrick", "pink"), cex.axis = 1, 
+            sub = "How often one drinks soda", ylab = "Correct guess", 
+            main = "Soda drinking frequency vs. correct guesses")
+
+```
+
+
+\textcolor{red}{\textbf{Question 12: } What is one concept we have learned about so far this semester that you would like further clarification on?} 
+
+*When to use chi-squared goodness of fit vs. binomial tests. Could I have run a chi-squared goodness of fit test on our second experiment (the jelly belly one)?*
